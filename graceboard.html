@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GraceBoard — Church Service Roster</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #f5f5f3; color: #1a1a18; min-height: 100vh; }
+  .app { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+  .header-left { display: flex; flex-direction: column; gap: 4px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 36px; height: 36px; border-radius: 8px; background: #3c6e47; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo-mark svg { width: 20px; height: 20px; fill: #fff; }
+  .logo-title { font-size: 20px; font-weight: 500; color: #1a1a18; letter-spacing: -0.3px; }
+  .logo-subtitle { font-size: 12px; color: #aaa; margin-left: 46px; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .clock { font-size: 22px; font-weight: 500; color: #1a1a18; font-variant-numeric: tabular-nums; }
+  .date-str { font-size: 12px; color: #aaa; text-align: right; }
+
+  .service-bar { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+  .service-bar-hint { font-size: 11px; color: #aaa; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .hint-dot { width: 6px; height: 6px; border-radius: 50%; background: #3c6e47; flex-shrink: 0; }
+  .service-fields { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: #888; }
+  .field input, .field select { font-size: 14px; border: 0.5px solid rgba(0,0,0,0.18); border-radius: 8px; padding: 7px 10px; background: #f9f9f7; color: #1a1a18; height: 36px; width: 100%; }
+  .field input:focus, .field select:focus { outline: none; border-color: #3c6e47; box-shadow: 0 0 0 2px rgba(60,110,71,0.15); }
+  .editable-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #3c6e47; background: #e8f4ea; border-radius: 20px; padding: 2px 7px; font-weight: 500; }
+
+  .week-nav { display: flex; align-items: center; gap: 6px; }
+  .week-nav button { width: 36px; height: 36px; border-radius: 8px; border: 0.5px solid rgba(0,0,0,0.18); background: #f9f9f7; color: #1a1a18; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.1s; }
+  .week-nav button:hover { background: #eee; }
+  .week-nav .week-label { font-size: 11px; color: #888; text-align: center; white-space: nowrap; line-height: 1.3; }
+
+  .reset-btn { font-size: 11px; color: #3c6e47; background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; margin-top: 6px; display: block; }
+  .reset-btn:hover { color: #2e5537; }
+  .sunset-notice { font-size: 11px; color: #aaa; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
+  .sunset-notice span { color: #854f0b; }
+
+  .add-section { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+  .section-title { font-size: 13px; font-weight: 500; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .add-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; }
+
+  .btn { height: 36px; padding: 0 14px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: 0.5px solid rgba(0,0,0,0.2); background: #f9f9f7; color: #1a1a18; transition: background 0.12s; white-space: nowrap; }
+  .btn:hover { background: #eee; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: #3c6e47; color: #fff; border-color: #2e5537; }
+  .btn-primary:hover { background: #2e5537; }
+  .btn-danger { background: #fcebeb; color: #a32d2d; border-color: rgba(163,45,45,0.25); }
+  .btn-danger:hover { background: #f7c1c1; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 13px; }
+
+  .roster-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; }
+  .roster-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 0.5px solid rgba(0,0,0,0.08); flex-wrap: wrap; gap: 8px; }
+  .roster-count { font-size: 13px; color: #888; }
+  .roster-actions { display: flex; gap: 8px; }
+  .filter-input { height: 32px; padding: 0 10px; font-size: 13px; border: 0.5px solid rgba(0,0,0,0.18); border-radius: 6px; background: #f9f9f7; color: #1a1a18; width: 160px; }
+  .filter-input:focus { outline: none; border-color: #3c6e47; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th { font-size: 12px; font-weight: 500; color: #888; text-align: left; padding: 8px 1.25rem; background: #f9f9f7; border-bottom: 0.5px solid rgba(0,0,0,0.08); text-transform: uppercase; letter-spacing: 0.4px; }
+  tbody tr { border-bottom: 0.5px solid rgba(0,0,0,0.07); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f9f9f7; }
+  tbody td { padding: 10px 1.25rem; color: #1a1a18; vertical-align: middle; }
+
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: #d4e8d9; color: #2e5537; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
+  .name-cell { display: flex; align-items: center; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .badge-confirmed { background: #eaf3de; color: #3b6d11; }
+  .badge-pending { background: #faeeda; color: #854f0b; }
+  .badge-declined { background: #fcebeb; color: #a32d2d; }
+  .td-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+  .empty { text-align: center; padding: 3rem 1rem; color: #888; }
+  .empty-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.4; }
+  .empty p { font-size: 14px; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .modal { background: #fff; border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 440px; border: 0.5px solid rgba(0,0,0,0.1); }
+  .modal h3 { font-size: 16px; font-weight: 500; margin-bottom: 1rem; }
+  .modal-fields { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.25rem; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+  .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #2e5537; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 200; opacity: 0; transform: translateY(8px); transition: all 0.25s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 600px) {
+    .service-fields { grid-template-columns: 1fr; }
+    .add-row { grid-template-columns: 1fr 1fr; }
+    .add-row .btn { grid-column: span 2; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L11 9H5l5.5 4-2 7L12 16l3.5 4-2-7L19 9h-6z"/></svg>
+        </div>
+        <span class="logo-title">GraceBoard</span>
+      </div>
+      <span class="logo-subtitle">Church service roster</span>
+    </div>
+    <div class="header-right">
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="date-str" id="dateStr"></div>
+    </div>
+  </div>
+
+  <div class="service-bar">
+    <div class="service-bar-hint">
+      <span class="hint-dot"></span>
+      Tap any field below to edit — set the service name or jump to a future Saturday to plan ahead.
+    </div>
+    <div class="service-fields">
+      <div class="field">
+        <label for="serviceName">Service name <span class="editable-badge">✎ editable</span></label>
+        <input id="serviceName" type="text" placeholder="e.g. Saturday Morning Service" />
+      </div>
+      <div class="field">
+        <label for="serviceDate">Service date <span class="editable-badge">✎ editable</span></label>
+        <input id="serviceDate" type="date" onchange="onDateChange()" />
+      </div>
+      <div class="week-nav">
+        <button onclick="shiftWeek(-1)" title="Previous Saturday">&#8592;</button>
+        <div class="week-label" id="weekLabel">this<br>week</div>
+        <button onclick="shiftWeek(1)" title="Next Saturday">&#8594;</button>
+      </div>
+    </div>
+    <button class="reset-btn" onclick="resetToNextSaturday()">↺ Reset to next Saturday</button>
+    <div class="sunset-notice">&#9790; Roster date rolls over to the following Saturday automatically at <span id="sunsetTime">sunset (~6:30 PM)</span> on service day.</div>
+  </div>
+
+  <div class="add-section">
+    <div class="section-title">Add person to roster</div>
+    <div class="add-row">
+      <div class="field">
+        <label for="newName">Name</label>
+        <input id="newName" type="text" placeholder="Full name" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="newRole">Program part</label>
+        <input id="newRole" type="text" placeholder="e.g. Opening Prayer" autocomplete="off" list="roleList" />
+        <datalist id="roleList">
+          <option value="Opening Prayer"></option>
+          <option value="Scripture Reading"></option>
+          <option value="Worship Leading"></option>
+          <option value="Sermon"></option>
+          <option value="Announcements"></option>
+          <option value="Offering Prayer"></option>
+          <option value="Closing Prayer"></option>
+          <option value="Ushering"></option>
+          <option value="Choir"></option>
+          <option value="Sound/Tech"></option>
+        </datalist>
+      </div>
+      <div class="field">
+        <label for="newStatus">Status</label>
+        <select id="newStatus">
+          <option value="confirmed">Confirmed</option>
+          <option value="pending">Pending</option>
+          <option value="declined">Declined</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="addPerson()">Add to roster</button>
+    </div>
+  </div>
+
+  <div class="roster-card">
+    <div class="roster-header">
+      <span class="roster-count" id="rosterCount">0 people on roster</span>
+      <div class="roster-actions">
+        <input class="filter-input" id="filterInput" type="text" placeholder="Search…" oninput="renderRoster()" />
+        <button class="btn btn-sm" onclick="downloadPDF()">&#x2193; Download PDF</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Program part</th>
+          <th>Status</th>
+          <th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="rosterBody"></tbody>
+    </table>
+    <div class="empty" id="emptyState" style="display:none">
+      <div class="empty-icon">✦</div>
+      <p>No one on the roster yet — add the first person above.</p>
+    </div>
+  </div>
+</div>
+
+<div id="editModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3>Edit roster entry</h3>
+    <div class="modal-fields">
+      <div class="field"><label>Name</label><input id="editName" type="text" /></div>
+      <div class="field"><label>Program part</label><input id="editRole" type="text" list="roleList" /></div>
+      <div class="field"><label>Status</label>
+        <select id="editStatus">
+          <option value="confirmed">Confirmed</option>
+          <option value="pending">Pending</option>
+          <option value="declined">Declined</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  /* ── Storage keys ── */
+  const STORE_PREFIX = 'graceboard_roster_';
+  const SERVICE_KEY  = 'graceboard_service';
+  let editingId = null;
+
+  /* ── Date helpers ── */
+  function pad(n) { return String(n).padStart(2,'0'); }
+  function toDateStr(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+
+  function getNextSaturday(from) {
+    const d = new Date(from); d.setHours(0,0,0,0);
+    const diff = d.getDay() === 6 ? 0 : (6 - d.getDay());
+    d.setDate(d.getDate() + diff);
+    return d;
+  }
+
+  function getSunsetTimestamp(dateStr) { return new Date(dateStr + 'T18:30:00').getTime(); }
+  function sunsetLabel(dateStr) { return new Date(dateStr + 'T18:30:00').toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+
+  /* ── Per-week roster storage ── */
+  function loadRoster(dateStr) {
+    try { return JSON.parse(localStorage.getItem(STORE_PREFIX + dateStr) || '[]'); } catch { return []; }
+  }
+  function saveRoster(dateStr, roster) {
+    localStorage.setItem(STORE_PREFIX + dateStr, JSON.stringify(roster));
+  }
+
+  /* ── Service state ── */
+  let state = (() => { try { return JSON.parse(localStorage.getItem(SERVICE_KEY) || 'null'); } catch { return null; } })();
+  if (!state) {
+    state = { name: 'Saturday Service', date: toDateStr(getNextSaturday(new Date())) };
+  }
+  function saveState() { localStorage.setItem(SERVICE_KEY, JSON.stringify(state)); }
+
+  /* ── Sunset auto-reset ── */
+  function checkSunsetReset() {
+    const now = Date.now();
+    if (toDateStr(new Date()) === state.date && now >= getSunsetTimestamp(state.date)) {
+      const next = new Date(state.date + 'T20:00:00');
+      next.setDate(next.getDate() + 7);
+      state.date = toDateStr(getNextSaturday(next));
+      saveState();
+      showToast('Rolled over to next Saturday.');
+    }
+  }
+
+  /* ── Week nav ── */
+  function shiftWeek(dir) {
+    const d = new Date(state.date + 'T12:00:00');
+    if (dir === 1) {
+      d.setDate(d.getDate() + 7);
+      state.date = toDateStr(getNextSaturday(d));
+    } else {
+      d.setDate(d.getDate() - 7);
+      state.date = toDateStr(getNextSaturday(d));
+    }
+    saveState(); syncUI();
+    showToast('Jumped to ' + formatDateShort(state.date));
+  }
+
+  function resetToNextSaturday() {
+    state.date = toDateStr(getNextSaturday(new Date()));
+    saveState(); syncUI();
+    showToast('Reset to next Saturday.');
+  }
+
+  function onDateChange() {
+    const val = document.getElementById('serviceDate').value;
+    if (!val) return;
+    state.date = val; saveState();
+    updateWeekLabel(); updateSunsetNotice(); renderRoster();
+  }
+
+  /* ── UI sync ── */
+  function syncUI() {
+    document.getElementById('serviceName').value = state.name;
+    document.getElementById('serviceDate').value = state.date;
+    updateWeekLabel(); updateSunsetNotice(); renderRoster();
+  }
+
+  function updateWeekLabel() {
+    const sat = new Date(state.date + 'T12:00:00');
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = Math.round((sat - today) / 86400000);
+    const lbl = document.getElementById('weekLabel');
+    if (diff === 0) lbl.innerHTML = 'this<br>Saturday';
+    else if (diff === 7) lbl.innerHTML = 'next<br>Saturday';
+    else if (diff === -7) lbl.innerHTML = 'last<br>Saturday';
+    else if (diff > 0) lbl.innerHTML = `+${Math.round(diff/7)}w`;
+    else lbl.innerHTML = `${Math.round(diff/7)}w`;
+  }
+
+  function updateSunsetNotice() {
+    document.getElementById('sunsetTime').textContent = `sunset (~${sunsetLabel(state.date)})`;
+  }
+
+  /* ── Clock ── */
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    document.getElementById('dateStr').textContent = now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
+
+  /* ── Roster render ── */
+  function getRoster() { return loadRoster(state.date); }
+
+  function renderRoster() {
+    const roster = getRoster();
+    const filter = document.getElementById('filterInput').value.toLowerCase();
+    const filtered = roster.filter(p => p.name.toLowerCase().includes(filter) || p.role.toLowerCase().includes(filter));
+    const tbody = document.getElementById('rosterBody');
+    const empty = document.getElementById('emptyState');
+    document.getElementById('rosterCount').textContent = `${roster.length} ${roster.length === 1 ? 'person' : 'people'} on roster for ${formatDateShort(state.date)}`;
+    if (filtered.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    tbody.innerHTML = filtered.map(p => `
+      <tr>
+        <td><div class="name-cell"><span class="avatar">${initials(p.name)}</span>${escHtml(p.name)}</div></td>
+        <td>${escHtml(p.role)}</td>
+        <td>${badgeHTML(p.status)}</td>
+        <td class="td-actions">
+          <button class="btn btn-sm" onclick="openEdit(${p.id})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deletePerson(${p.id})">Remove</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  /* ── CRUD ── */
+  function addPerson() {
+    const name = document.getElementById('newName').value.trim();
+    const role = document.getElementById('newRole').value.trim();
+    const status = document.getElementById('newStatus').value;
+    if (!name || !role) { showToast('Enter a name and program part first.'); return; }
+    const roster = getRoster();
+    const id = roster.length ? Math.max(...roster.map(r => r.id)) + 1 : 1;
+    roster.push({ id, name, role, status });
+    saveRoster(state.date, roster);
+    document.getElementById('newName').value = '';
+    document.getElementById('newRole').value = '';
+    document.getElementById('newStatus').value = 'confirmed';
+    renderRoster();
+    showToast(`${name} added to roster.`);
+  }
+
+  function deletePerson(id) {
+    let roster = getRoster();
+    const p = roster.find(r => r.id === id);
+    if (!p) return;
+    if (!confirm(`Remove ${p.name} from the roster?`)) return;
+    saveRoster(state.date, roster.filter(r => r.id !== id));
+    renderRoster();
+    showToast(`${p.name} removed.`);
+  }
+
+  function openEdit(id) {
+    const p = getRoster().find(r => r.id === id);
+    if (!p) return;
+    editingId = id;
+    document.getElementById('editName').value = p.name;
+    document.getElementById('editRole').value = p.role;
+    document.getElementById('editStatus').value = p.status;
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  function closeModal() { document.getElementById('editModal').style.display = 'none'; editingId = null; }
+
+  function saveEdit() {
+    const name = document.getElementById('editName').value.trim();
+    const role = document.getElementById('editRole').value.trim();
+    const status = document.getElementById('editStatus').value;
+    if (!name || !role) { showToast('Name and program part are required.'); return; }
+    const roster = getRoster();
+    const p = roster.find(r => r.id === editingId);
+    if (p) { p.name = name; p.role = role; p.status = status; }
+    saveRoster(state.date, roster);
+    renderRoster(); closeModal();
+    showToast('Changes saved.');
+  }
+
+  /* ── Helpers ── */
+  function initials(name) { return name.trim().split(/\s+/).map(w => w[0]||'').slice(0,2).join('').toUpperCase(); }
+  function badgeHTML(status) {
+    const map = { confirmed:['badge-confirmed','Confirmed'], pending:['badge-pending','Pending'], declined:['badge-declined','Declined'] };
+    const [cls,label] = map[status] || ['badge-pending',status];
+    return `<span class="badge ${cls}">${label}</span>`;
+  }
+  function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function formatDateShort(dateStr) { return new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+  function formatDateLong(dateStr) { return new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  /* ── Service name on blur ── */
+  document.getElementById('serviceName').addEventListener('change', function() {
+    state.name = this.value.trim() || 'Saturday Service';
+    saveState();
+  });
+
+  /* ── PDF export ── */
+  function downloadPDF() {
+    if (typeof window.jspdf === 'undefined') { showToast('PDF library loading, please try again.'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const roster = getRoster();
+    const now = new Date();
+    const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const reportTime = `${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} at ${timeStr}`;
+
+    doc.setFillColor(60,110,71); doc.rect(0,0,pageWidth,38,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(22); doc.setFont('helvetica','bold');
+    doc.text('GraceBoard', 14, 16);
+    doc.setFontSize(11); doc.setFont('helvetica','normal');
+    doc.text('Church Service Roster', 14, 24);
+    doc.setFontSize(9); doc.text(`Report generated: ${reportTime}`, 14, 32);
+
+    doc.setTextColor(30,30,30); doc.setFontSize(13); doc.setFont('helvetica','bold');
+    doc.text(state.name, 14, 50);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(100,100,100);
+    doc.text(formatDateLong(state.date), 14, 57);
+
+    const confirmed = roster.filter(r=>r.status==='confirmed').length;
+    const pending   = roster.filter(r=>r.status==='pending').length;
+    const declined  = roster.filter(r=>r.status==='declined').length;
+
+    doc.setFontSize(9); doc.setFont('helvetica','bold');
+    doc.setTextColor(60,110,71);  doc.text(`Total: ${roster.length}`, 14, 65);
+    doc.setTextColor(59,109,17);  doc.text(`Confirmed: ${confirmed}`, 40, 65);
+    doc.setTextColor(133,79,11);  doc.text(`Pending: ${pending}`, 80, 65);
+    doc.setTextColor(163,45,45);  doc.text(`Declined: ${declined}`, 115, 65);
+    doc.setTextColor(30,30,30);
+
+    doc.autoTable({
+      startY: 71,
+      head: [['#','Name','Program Part','Status']],
+      body: roster.map((p,i) => [i+1, p.name, p.role, p.status.charAt(0).toUpperCase()+p.status.slice(1)]),
+      theme: 'grid',
+      headStyles: { fillColor:[60,110,71], textColor:255, fontSize:10, fontStyle:'bold', cellPadding:4 },
+      bodyStyles: { fontSize:10, cellPadding:4 },
+      columnStyles: { 0:{cellWidth:12,halign:'center',textColor:[130,130,130]}, 1:{cellWidth:60}, 2:{cellWidth:80}, 3:{cellWidth:35} },
+      didParseCell(data) {
+        if (data.column.index===3 && data.section==='body') {
+          const v = data.cell.raw.toLowerCase();
+          if (v==='confirmed') data.cell.styles.textColor=[59,109,17];
+          else if (v==='pending') data.cell.styles.textColor=[133,79,11];
+          else if (v==='declined') data.cell.styles.textColor=[163,45,45];
+        }
+      },
+      alternateRowStyles: { fillColor:[248,252,249] },
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 8;
+    doc.setFontSize(8); doc.setTextColor(150,150,150);
+    doc.text(`GraceBoard  •  Printed ${reportTime}`, 14, finalY);
+    doc.save(`${state.name.replace(/[^a-z0-9]/gi,'-').toLowerCase()}-${state.date}-roster.pdf`);
+    showToast('PDF downloaded.');
+  }
+
+  /* ── Modal events ── */
+  document.getElementById('editModal').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key==='Escape') closeModal();
+    if (e.key==='Enter' && document.getElementById('editModal').style.display==='flex') saveEdit();
+  });
+
+  /* ── Boot ── */
+  checkSunsetReset();
+  updateClock();
+  setInterval(updateClock, 1000);
+  setInterval(checkSunsetReset, 60000);
+  syncUI();
+</script>
+</body>
+</html>
