@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GraceBoard — Church Service Roster</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233c6e47'/><text y='.85em' font-size='75' x='12'>✦</text></svg>" />
+
+  <!-- ── Stylesheets (load order matters) ── -->
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+
+  <!-- ── Third-party: PDF generation ── -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════
+     App shell
+════════════════════════════════════════════════════════ -->
+<div class="app">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 2L11 9H5l5.5 4-2 7L12 16l3.5 4-2-7L19 9h-6z"/>
+          </svg>
+        </div>
+        <span class="logo-title">GraceBoard</span>
+      </div>
+      <span class="logo-subtitle">Church service roster</span>
+    </div>
+    <div class="header-right">
+      <div class="clock" id="clock" aria-live="polite">--:--:--</div>
+      <div class="date-str" id="dateStr"></div>
+    </div>
+  </div>
+
+  <!-- ── Service bar ── -->
+  <div class="card service-bar">
+    <div class="service-bar-hint">
+      <span class="hint-dot" aria-hidden="true"></span>
+      Tap any field below to edit — set the service name or jump to a future Saturday to plan ahead.
+    </div>
+    <div class="service-fields">
+      <div class="field">
+        <label for="serviceName">
+          Service name
+          <span class="editable-badge">✎ editable</span>
+        </label>
+        <input id="serviceName" type="text" placeholder="e.g. Saturday Morning Service" />
+      </div>
+      <div class="field">
+        <label for="serviceDate">
+          Service date
+          <span class="editable-badge">✎ editable</span>
+        </label>
+        <input id="serviceDate" type="date" onchange="app.onDateChange()" />
+      </div>
+      <div class="week-nav" role="group" aria-label="Navigate weeks">
+        <button onclick="app.shiftWeek(-1)" title="Previous Saturday" aria-label="Previous Saturday">&#8592;</button>
+        <div class="week-label" id="weekLabel">this<br>week</div>
+        <button onclick="app.shiftWeek(1)"  title="Next Saturday"     aria-label="Next Saturday">&#8594;</button>
+      </div>
+    </div>
+    <button class="reset-btn" onclick="app.resetToNextSaturday()">↺ Reset to next Saturday</button>
+    <div class="sunset-notice">
+      &#9790; Roster date rolls over to the following Saturday automatically at
+      <span id="sunsetTime">sunset (~6:30 PM)</span> on service day.
+    </div>
+  </div>
+
+  <!-- ── Add person ── -->
+  <div class="card add-section">
+    <div class="section-title">Add person to roster</div>
+    <div class="add-row">
+      <div class="field">
+        <label for="newName">Name</label>
+        <input id="newName" type="text" placeholder="Full name" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="newRole">Program part</label>
+        <input id="newRole" type="text" placeholder="e.g. Opening Prayer" autocomplete="off" list="roleList" />
+        <datalist id="roleList">
+          <option value="Sound/Tech"></option>
+          <option value="Deacon/Deaconess"></option>
+          <option value="Sabbath School Superintendent"></option>
+          <option value="Sabbath School Opening Prayer"></option>
+          <option value="Sabbath School Scripture Reading"></option>
+          <option value="Sabbath School Opening Hymn"></option>
+          <option value="Mission Story"></option>
+          <option value="Lesson Review"></option>
+          <option value="Praise Team"></option>
+          <option value="Announcements"></option>
+          <option value="Call to Worship"></option>
+          <option value="Invocation"></option>
+          <option value="Divine Service Opening Hymn"></option>
+          <option value="Welcome"></option>
+          <option value="Children's Story"></option>
+          <option value="Special SOng"></option>
+          <option value="Offetory"></option>
+          <option value="Scripture Reading"></option>
+          <option value="Pastorial Prayer"></option>
+          <option value="Introduction of Speaker"></option>
+          <option value="Meditation Song"></option>
+          <option value="Speaker"></option>
+          <option value="Closing Hymn"></option>
+          <option value="Benidiction"></option>
+        </datalist>
+      </div>
+      <div class="field">
+        <label for="newStatus">Status</label>
+        <select id="newStatus">
+          <option value="confirmed">Confirmed</option>
+          <option value="pending">Pending</option>
+          <option value="declined">Declined</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="app.addPerson()">Add to roster</button>
+    </div>
+  </div>
+
+  <!-- ── Roster table ── -->
+  <div class="roster-card">
+    <div class="roster-header">
+      <span class="roster-count" id="rosterCount" aria-live="polite">0 people on roster</span>
+      <div class="roster-actions">
+        <label for="filterInput" class="sr-only">Search roster</label>
+        <input
+          class="filter-input"
+          id="filterInput"
+          type="search"
+          placeholder="Search…"
+          oninput="app.refreshRoster()"
+          aria-label="Search roster"
+        />
+        <button class="btn btn-sm" onclick="app.downloadPDF()">&#x2193; Download PDF</button>
+      </div>
+    </div>
+    <table aria-label="Service roster">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Program part</th>
+          <th scope="col">Status</th>
+          <th scope="col" style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="rosterBody"></tbody>
+    </table>
+    <div class="empty" id="emptyState" style="display:none" aria-live="polite">
+      <div class="empty-icon" aria-hidden="true">✦</div>
+      <p>No one on the roster yet — add the first person above.</p>
+    </div>
+  </div>
+
+</div><!-- /.app -->
+
+
+<!-- ════════════════════════════════════════════════════════
+     Edit modal
+════════════════════════════════════════════════════════ -->
+<div id="editModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+  <div class="modal">
+    <h3 id="editModalTitle">Edit roster entry</h3>
+    <div class="modal-fields">
+      <div class="field">
+        <label for="editName">Name</label>
+        <input id="editName" type="text" />
+      </div>
+      <div class="field">
+        <label for="editRole">Program part</label>
+        <input id="editRole" type="text" list="roleList" />
+      </div>
+      <div class="field">
+        <label for="editStatus">Status</label>
+        <select id="editStatus">
+          <option value="confirmed">Confirmed</option>
+          <option value="pending">Pending</option>
+          <option value="declined">Declined</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn"         onclick="app.closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="app.saveEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- ── Firebase (configure & enable when ready) ── -->
+
+<script type="module">
+  import { initializeApp }  from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getAnalytics }   from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCh6FAqEkP5xv8XIo-JzYYncwrV7bOnHrA",
+    authDomain: "graceboard-a3e90.firebaseapp.com",
+    projectId: "graceboard-a3e90",
+    storageBucket: "graceboard-a3e90.firebasestorage.app",
+    messagingSenderId: "400298351043",
+    appId: "1:400298351043:web:bdf241a0bd114652544576",
+    measurementId: "G-HH7WGSKL82"
+  };
+
+  const firebaseApp = initializeApp(firebaseConfig);
+  const analytics   = getAnalytics(firebaseApp);
+
+  // Expose db for storage.js when you migrate to Firestore:
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  window._db = getFirestore(firebaseApp);
+</script>
+
+
+<!-- ── App entry point (ES module) ── -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>

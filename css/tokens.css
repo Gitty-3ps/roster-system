@@ -1,0 +1,80 @@
+/* ============================================================
+   tokens.css — Design tokens (single source of truth)
+   Change a value here → it updates everywhere automatically.
+   ============================================================ */
+
+:root {
+  /* ── Brand palette ── */
+  --color-brand:          #3c6e47;
+  --color-brand-dark:     #2e5537;
+  --color-brand-bg:       #e8f4ea;
+  --color-brand-bg-light: #f8fcf9;
+
+  /* ── Neutrals ── */
+  --color-bg:             #f5f5f3;
+  --color-surface:        #ffffff;
+  --color-surface-muted:  #f9f9f7;
+  --color-border:         rgba(0, 0, 0, 0.10);
+  --color-border-field:   rgba(0, 0, 0, 0.18);
+
+  /* ── Text ── */
+  --color-text:           #1a1a18;
+  --color-text-muted:     #888888;
+  --color-text-faint:     #aaaaaa;
+
+  /* ── Status: Confirmed ── */
+  --color-confirmed-bg:   #eaf3de;
+  --color-confirmed-text: #3b6d11;
+
+  /* ── Status: Pending ── */
+  --color-pending-bg:     #faeeda;
+  --color-pending-text:   #854f0b;
+
+  /* ── Status: Declined ── */
+  --color-declined-bg:    #fcebeb;
+  --color-declined-text:  #a32d2d;
+
+  /* ── Danger ── */
+  --color-danger-bg:      #fcebeb;
+  --color-danger-text:    #a32d2d;
+  --color-danger-border:  rgba(163, 45, 45, 0.25);
+  --color-danger-bg-hover:#f7c1c1;
+
+  /* ── Overlay ── */
+  --color-overlay:        rgba(0, 0, 0, 0.40);
+  --color-toast-bg:       #2e5537;
+
+  /* ── Spacing ── */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  12px;
+  --space-lg:  20px;
+  --space-xl:  24px;
+
+  /* ── Radius ── */
+  --radius-sm:  6px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-full: 9999px;
+
+  /* ── Typography ── */
+  --font-family:    system-ui, -apple-system, sans-serif;
+  --font-size-xs:   11px;
+  --font-size-sm:   12px;
+  --font-size-base: 14px;
+  --font-size-md:   16px;
+  --font-size-lg:   20px;
+  --font-size-xl:   22px;
+
+  /* ── Transitions ── */
+  --transition-fast:   0.1s ease;
+  --transition-base:   0.12s ease;
+  --transition-toast:  0.25s ease;
+
+  /* ── Shadows / focus ring ── */
+  --focus-ring: 0 0 0 2px rgba(60, 110, 71, 0.15);
+
+  /* ── Z-index layers ── */
+  --z-modal:  100;
+  --z-toast:  200;
+}
