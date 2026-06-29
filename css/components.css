@@ -213,7 +213,7 @@
   background: var(--color-surface);
   border: 0.5px solid var(--color-border);
   border-radius: var(--radius-lg);
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .roster-header {
@@ -258,7 +258,6 @@ table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--font-size-base);
-  min-width: 480px;
 }
 
 thead th {
@@ -340,7 +339,6 @@ tbody td {
   display: flex;
   gap: 6px;
   justify-content: flex-end;
-  white-space: nowrap;
 }
 
 
@@ -424,4 +422,42 @@ tbody td {
 .toast.show {
   opacity: 1;
   transform: translateY(0);
+}
+
+
+/* ── Connection status + last updated ───────────────────── */
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.connection-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.2px;
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.connection-online {
+  background: var(--color-confirmed-bg);
+  color: var(--color-confirmed-text);
+}
+
+.connection-offline {
+  background: var(--color-pending-bg);
+  color: var(--color-pending-text);
+}
+
+.last-updated {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
+  white-space: nowrap;
 }

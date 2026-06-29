@@ -1,18 +1,11 @@
 /**
  * app.js — Application controller.
  *
- * This is the ONLY file that wires everything together.
- * It imports from:
- *   utils.js   — pure helpers
- *   storage.js — persistence layer
- *   ui.js      — DOM rendering
- *   pdf.js     — PDF export
- *
- * How to scale this further
- * ─────────────────────────
- * • Add a new feature module (e.g. js/notifications.js) and import it here.
- * • Swap the storage layer (e.g. Firebase) by editing only storage.js.
- * • Introduce a router (e.g. /pages/settings.js) and lazy-import per route.
+ * Features wired here:
+ *  • Real-time roster sync (Firestore onSnapshot)
+ *  • Offline-first (Firestore IndexedDB persistence)
+ *  • "Last updated" + online/offline status indicator
+ *  • Offline-capable PDF export (jsPDF bundled via Service Worker cache)
  */
 
 import {
@@ -24,7 +17,7 @@ import {
 } from './utils.js';
 
 import {
-  loadRoster,
+  subscribeRoster,
   saveRoster,
   loadServiceState,
   saveServiceState,
@@ -37,6 +30,8 @@ import {
   updateWeekLabel,
   updateSunsetNotice,
   renderRoster,
+  setConnectionStatus,
+  setLastUpdated,
   openModal,
   closeModal,
   getModalValues,
@@ -49,14 +44,14 @@ import { downloadPDF } from './pdf.js';
 
 // ── State ─────────────────────────────────────────────────
 
-/** @type {{ name: string, date: string }} */
 let state = loadServiceState() ?? {
   name: 'Saturday Service',
   date: toDateStr(getNextSaturday(new Date())),
 };
 
-/** ID of the roster entry currently open in the edit modal. */
-let editingId = null;
+let editingId      = null;
+let _currentRoster = [];      // in-memory cache of the live roster
+let _unsubscribe   = null;    // current Firestore listener teardown fn
 
 // ── Internal helpers ──────────────────────────────────────
 
@@ -64,21 +59,35 @@ function _saveState() {
   saveServiceState(state);
 }
 
-async function _getRoster() {
-  return await loadRoster(state.date);
+// Starts (or restarts) the real-time Firestore listener for state.date.
+// Any change from any user triggers a re-render automatically.
+function _subscribe() {
+  if (_unsubscribe) _unsubscribe();   // tear down previous listener
+
+  _unsubscribe = subscribeRoster(state.date, (roster, { fromCache, updatedAt }) => {
+    _currentRoster = roster;
+    renderRoster(roster, getFilterValue(), state.date);
+    setConnectionStatus(fromCache ? 'offline' : 'online');
+    if (updatedAt) setLastUpdated(updatedAt);
+  });
 }
 
 async function _refreshRoster() {
-  const roster = await _getRoster();
-  renderRoster(roster, getFilterValue(), state.date);
+  renderRoster(_currentRoster, getFilterValue(), state.date);
 }
 
-async function _syncAll() {
+function _syncAll() {
   syncServiceBar(state);
   updateWeekLabel(state.date);
   updateSunsetNotice(`sunset (~${sunsetLabel(state.date)})`);
-  await _refreshRoster();
+  _subscribe();   // subscribe (or resubscribe) for new date
 }
+
+// ── Online / offline detection ────────────────────────────
+
+window.addEventListener('online',  () => setConnectionStatus('online'));
+window.addEventListener('offline', () => setConnectionStatus('offline'));
+
 // ── Sunset auto-roll ──────────────────────────────────────
 
 function checkSunsetReset() {
@@ -89,67 +98,65 @@ function checkSunsetReset() {
     state.date = toDateStr(getNextSaturday(next));
     _saveState();
     showToast('Rolled over to next Saturday.');
+    _syncAll();
   }
 }
 
 // ── Week navigation ───────────────────────────────────────
 
-async function shiftWeek(dir) {
+function shiftWeek(dir) {
   const d = new Date(`${state.date}T12:00:00`);
   d.setDate(d.getDate() + dir * 7);
   state.date = toDateStr(getNextSaturday(d));
   _saveState();
-  await _syncAll();
+  _syncAll();
   showToast(`Jumped to ${formatDateShort(state.date)}`);
 }
 
-async function resetToNextSaturday() {
+function resetToNextSaturday() {
   state.date = toDateStr(getNextSaturday(new Date()));
   _saveState();
-  await _syncAll();
+  _syncAll();
   showToast('Reset to next Saturday.');
 }
 
-async function onDateChange() {
+function onDateChange() {
   const val = document.getElementById('serviceDate').value;
   if (!val) return;
   state.date = val;
   _saveState();
   updateWeekLabel(state.date);
   updateSunsetNotice(`sunset (~${sunsetLabel(state.date)})`);
-  await _refreshRoster();
+  _subscribe();
 }
+
 // ── Roster CRUD ───────────────────────────────────────────
 
 async function addPerson() {
   const { name, role, status } = getAddFormValues();
-  if (!name || !role) {
-    showToast('Enter a name and program part first.');
-    return;
-  }
-  
-  const roster = await _getRoster();
+  if (!name || !role) { showToast('Enter a name and program part first.'); return; }
+
+  const roster = [..._currentRoster];
   const id     = roster.length ? Math.max(...roster.map((r) => r.id)) + 1 : 1;
   roster.push({ id, name, role, status });
-  saveRoster(state.date, roster);
+
+  await saveRoster(state.date, roster);
   resetAddForm();
-  _refreshRoster();
   showToast(`${name} added to roster.`);
+  // UI updates automatically via the onSnapshot listener
 }
 
-
 async function deletePerson(id) {
-  const roster = await _getRoster();
-  const person = roster.find((r) => r.id === id);
+  const person = _currentRoster.find((r) => r.id === id);
   if (!person) return;
   if (!confirm(`Remove ${person.name} from the roster?`)) return;
-  await saveRoster(state.date, roster.filter((r) => r.id !== id));
-  await _refreshRoster();
+
+  await saveRoster(state.date, _currentRoster.filter((r) => r.id !== id));
   showToast(`${person.name} removed.`);
 }
 
-async function openEdit(id) {
-  const person = (await _getRoster()).find((r) => r.id === id);
+function openEdit(id) {
+  const person = _currentRoster.find((r) => r.id === id);
   if (!person) return;
   editingId = id;
   openModal(person);
@@ -158,16 +165,15 @@ async function openEdit(id) {
 async function saveEdit() {
   const { name, role, status } = getModalValues();
   if (!name || !role) { showToast('Name and program part are required.'); return; }
-  const roster = await _getRoster();
-  const person = roster.find((r) => r.id === editingId);
-  if (person) Object.assign(person, { name, role, status });
+
+  const roster = _currentRoster.map((r) =>
+    r.id === editingId ? { ...r, name, role, status } : r,
+  );
   await saveRoster(state.date, roster);
-  await _refreshRoster();
   closeModal();
   editingId = null;
   showToast('Changes saved.');
 }
-
 
 // ── PDF export ────────────────────────────────────────────
 
@@ -175,7 +181,7 @@ async function handleDownloadPDF() {
   downloadPDF({
     serviceName: state.name,
     serviceDate: state.date,
-    roster:      await _getRoster(),
+    roster:      _currentRoster,
     onError:     showToast,
     onSuccess:   () => showToast('PDF downloaded.'),
   });
@@ -200,8 +206,6 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ── Expose methods for inline HTML handlers ───────────────
-// (needed because ES modules don't pollute the global scope)
-// These are the ONLY globals this app creates.
 
 window.app = {
   shiftWeek,
@@ -212,10 +216,17 @@ window.app = {
   openEdit,
   saveEdit,
   closeModal,
-  downloadPDF:    handleDownloadPDF,
-  // exposed so the filter input's oninput handler can call it
-  refreshRoster:  _refreshRoster,
+  downloadPDF:   handleDownloadPDF,
+  refreshRoster: _refreshRoster,
 };
+
+// ── Service Worker registration (offline shell caching) ───
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch((err) => {
+    console.warn('Service Worker registration failed:', err);
+  });
+}
 
 // ── Boot ──────────────────────────────────────────────────
 

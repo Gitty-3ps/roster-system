@@ -9,10 +9,6 @@ import { escHtml, initials, badgeHTML, formatDateShort } from './utils.js';
 
 let _toastTimer = null;
 
-/**
- * Shows a temporary toast notification.
- * @param {string} msg
- */
 export function showToast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -21,18 +17,56 @@ export function showToast(msg) {
   _toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
 }
 
-// ── Clock ─────────────────────────────────────────────────
+// ── Connection status + last updated ─────────────────────
 
 /**
- * Refreshes the live clock and date string in the header.
- * @param {string} [pad] — optional pad function import; we re-import for purity
+ * Updates the connection pill in the header.
+ * @param {'online'|'offline'} status
  */
+export function setConnectionStatus(status) {
+  const el = document.getElementById('connectionStatus');
+  if (!el) return;
+  if (status === 'online') {
+    el.className        = 'connection-pill connection-online';
+    el.innerHTML        = '&#x25CF; Live';
+    el.title            = 'Connected — changes sync in real time';
+  } else {
+    el.className        = 'connection-pill connection-offline';
+    el.innerHTML        = '&#x25CF; Offline';
+    el.title            = 'Offline — changes will sync when back online';
+  }
+}
+
+/**
+ * Shows the "Last updated X ago" label.
+ * @param {Date} date
+ */
+export function setLastUpdated(date) {
+  const el = document.getElementById('lastUpdated');
+  if (!el) return;
+
+  function fmt() {
+    const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (diff < 5)   return 'just now';
+    if (diff < 60)  return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+
+  el.textContent = `Updated ${fmt()}`;
+
+  // Refresh the "X ago" label every 30 seconds without a full re-render
+  clearInterval(el._interval);
+  el._interval = setInterval(() => { el.textContent = `Updated ${fmt()}`; }, 30_000);
+}
+
+// ── Clock ─────────────────────────────────────────────────
+
 export function updateClock() {
   const now = new Date();
   const hh  = String(now.getHours()).padStart(2, '0');
   const mm  = String(now.getMinutes()).padStart(2, '0');
   const ss  = String(now.getSeconds()).padStart(2, '0');
-
   document.getElementById('clock').textContent = `${hh}:${mm}:${ss}`;
   document.getElementById('dateStr').textContent = now.toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -41,25 +75,16 @@ export function updateClock() {
 
 // ── Service bar ───────────────────────────────────────────
 
-/**
- * Syncs the service-name input and service-date picker to the current state.
- * @param {{ name: string, date: string }} state
- */
 export function syncServiceBar(state) {
   document.getElementById('serviceName').value = state.name;
   document.getElementById('serviceDate').value  = state.date;
 }
 
-/**
- * Updates the "this week / next week / +2w" label in the week navigator.
- * @param {string} dateStr — "YYYY-MM-DD"
- */
 export function updateWeekLabel(dateStr) {
   const sat   = new Date(`${dateStr}T12:00:00`);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const diff  = Math.round((sat - today) / 86_400_000);
   const lbl   = document.getElementById('weekLabel');
-
   if      (diff === 0)  lbl.innerHTML = 'this<br>Saturday';
   else if (diff === 7)  lbl.innerHTML = 'next<br>Saturday';
   else if (diff === -7) lbl.innerHTML = 'last<br>Saturday';
@@ -67,23 +92,12 @@ export function updateWeekLabel(dateStr) {
   else                  lbl.innerHTML = `${Math.round(diff / 7)}w`;
 }
 
-/**
- * Updates the sunset notice with the calculated time for the chosen date.
- * @param {string} sunsetText — pre-formatted string, e.g. "sunset (~6:30 PM)"
- */
 export function updateSunsetNotice(sunsetText) {
   document.getElementById('sunsetTime').textContent = sunsetText;
 }
 
 // ── Roster table ──────────────────────────────────────────
 
-/**
- * Renders the roster table rows (or the empty state).
- *
- * @param {Array}  roster  — full RosterEntry[] for the current date
- * @param {string} filter  — lowercase search string
- * @param {string} dateStr — "YYYY-MM-DD" for the count label
- */
 export function renderRoster(roster, filter, dateStr) {
   const filtered = roster.filter(
     (p) =>
@@ -128,10 +142,6 @@ export function renderRoster(roster, filter, dateStr) {
 
 // ── Modal ─────────────────────────────────────────────────
 
-/**
- * Opens the edit modal and populates it with the given person's data.
- * @param {{ name: string, role: string, status: string }} person
- */
 export function openModal(person) {
   document.getElementById('editName').value   = person.name;
   document.getElementById('editRole').value   = person.role;
@@ -139,15 +149,10 @@ export function openModal(person) {
   document.getElementById('editModal').style.display = 'flex';
 }
 
-/** Closes the edit modal. */
 export function closeModal() {
   document.getElementById('editModal').style.display = 'none';
 }
 
-/**
- * Reads and returns the current values from the edit modal fields.
- * @returns {{ name: string, role: string, status: string }}
- */
 export function getModalValues() {
   return {
     name:   document.getElementById('editName').value.trim(),
@@ -158,10 +163,6 @@ export function getModalValues() {
 
 // ── Add-person form ───────────────────────────────────────
 
-/**
- * Reads values from the "Add person" form.
- * @returns {{ name: string, role: string, status: string }}
- */
 export function getAddFormValues() {
   return {
     name:   document.getElementById('newName').value.trim(),
@@ -170,14 +171,12 @@ export function getAddFormValues() {
   };
 }
 
-/** Resets the "Add person" form back to its default state. */
 export function resetAddForm() {
-  document.getElementById('newName').value  = '';
-  document.getElementById('newRole').value  = '';
+  document.getElementById('newName').value   = '';
+  document.getElementById('newRole').value   = '';
   document.getElementById('newStatus').value = 'confirmed';
 }
 
-/** Returns the current value of the filter / search input. */
 export function getFilterValue() {
   return document.getElementById('filterInput').value.toLowerCase();
 }

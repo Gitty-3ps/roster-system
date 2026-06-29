@@ -75,15 +75,4 @@
   .add-row .btn {
     grid-column: span 2;
   }
-  table {
-    font-size: 13px;
-  }
-
-  tbody td {
-    padding: 8px 0.75rem;
-  }
-
-  thead th {
-    padding: 6px 0.75rem;
-  }
 }

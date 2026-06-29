@@ -83,11 +83,10 @@ export function downloadPDF({ serviceName, serviceDate, roster, onError, onSucce
     },
     bodyStyles: { fontSize: 10, cellPadding: 4 },
     columnStyles: {
-      // 0: { cellWidth: 12, halign: 'center', textColor: [130, 130, 130] },
-      // 1: { cellWidth: 60 },
-      // 2: { cellWidth: 80 },
-      // 3: { cellWidth: 35 },
-        0: { halign: 'center', textColor: [130, 130, 130] },
+      0: { cellWidth: 12, halign: 'center', textColor: [130, 130, 130] },
+      1: { cellWidth: 60 },
+      2: { cellWidth: 80 },
+      3: { cellWidth: 35 },
     },
     didParseCell(data) {
       if (data.column.index === 3 && data.section === 'body') {
