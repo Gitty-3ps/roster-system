@@ -1,0 +1,47 @@
+/* ============================================================
+   base.css — Reset and global element styles.
+   Do NOT put component styles here.
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+
+/* ── Accessible focus outline for keyboard users ── */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* Shared field styles reused across the app */
+input,
+select {
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  border: 0.5px solid var(--color-border-field);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  height: 36px;
+  width: 100%;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: var(--focus-ring);
+}
