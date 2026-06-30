@@ -1,5 +1,6 @@
 /* ============================================================
    layout.css — Page skeleton, header, structural containers.
+   Handles ALL layout/spacing. No colours or component styles here.
    ============================================================ */
 
 /* ── App wrapper ── */
@@ -34,7 +35,7 @@
 
 /* ── Section cards (shared shell) ── */
 .card {
-  background: var(--color-surface);
+  background: var(--color-card);
   border: 0.5px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 1rem 1.25rem;
@@ -62,17 +63,194 @@
   color: var(--color-text-muted);
 }
 
-/* ── Responsive breakpoint ── */
-@media (max-width: 600px) {
+/* ── Service bar ── */
+/*
+  3-column grid:  [service name] [service date] [week nav arrows]
+  The week nav never shrinks below its natural width.
+  The name column gets all leftover space.
+  The date column has a sensible min-width so it never truncates.
+*/
+.service-fields {
+  display: grid;
+  grid-template-columns: 1fr minmax(150px, auto) auto;
+  gap: var(--space-sm);
+  align-items: end;
+}
+
+/* Week nav: arrows + label, always inline */
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;    /* never let this compress */
+}
+
+.week-nav button {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+
+.week-label {
+  min-width: 48px;   /* enough for "+10w" without wrapping */
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ── Add-person row ── */
+/*
+  4-column grid: [name] [role] [status] [button]
+  All data columns share space equally; button stays fixed width.
+*/
+.add-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: var(--space-sm);
+  align-items: end;
+}
+
+/* ── Roster header ── */
+.roster-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 0.5px solid var(--color-border);
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.roster-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+/* ── Modal overlay ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 100;
+}
+
+.modal {
+  width: 100%;
+  max-width: 440px;
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+}
+
+.modal-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: 1.25rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+/* ============================================================
+   Responsive breakpoints
+   ============================================================ */
+
+/* ── Tablet  (≤ 700px) ── */
+@media (max-width: 700px) {
+  /*
+    Service bar: stack name on top, date + week-nav side by side below.
+    This stops the date field from being squeezed.
+  */
   .service-fields {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
   }
 
+  /* Service name spans the full width on row 1 */
+  .service-fields .field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  /* Date field sits in column 1, row 2 */
+  .service-fields .field:nth-child(2) {
+    grid-column: 1;
+  }
+
+  /* Week nav sits beside the date field in column 2, row 2 */
+  .service-fields .week-nav {
+    grid-column: 2;
+    align-self: end;
+  }
+
+  /* Add-row: name + role on row 1, status + button on row 2 */
   .add-row {
     grid-template-columns: 1fr 1fr;
   }
 
+  /* Status and Add button side by side */
+  .add-row .field:nth-child(3) {
+    grid-column: 1;
+  }
+
   .add-row .btn {
-    grid-column: span 2;
+    grid-column: 2;
+    align-self: end;
+  }
+}
+
+/* ── Mobile (≤ 480px) ── */
+@media (max-width: 480px) {
+  .app {
+    padding: 1rem 0.75rem 3rem;
+  }
+
+  /* Full-stack: every field on its own row */
+  .service-fields {
+    grid-template-columns: 1fr;
+    grid-template-rows: unset;
+  }
+
+  .service-fields .field:first-child,
+  .service-fields .field:nth-child(2) {
+    grid-column: 1;
+  }
+
+  /* Week nav full width, centred, with a visible label */
+  .service-fields .week-nav {
+    grid-column: 1;
+    justify-content: center;
+    padding: 0.25rem 0;
+  }
+
+  /* Add-row: everything full width, stacked */
+  .add-row {
+    grid-template-columns: 1fr;
+  }
+
+  .add-row .field:nth-child(3),
+  .add-row .btn {
+    grid-column: 1;
+  }
+
+  /* Roster actions wrap cleanly */
+  .roster-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .roster-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .filter-input {
+    flex: 1;
+    width: auto;
   }
 }
