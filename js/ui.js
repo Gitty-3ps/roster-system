@@ -17,6 +17,63 @@ export function showToast(msg) {
   _toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
 }
 
+// ── Access gate ───────────────────────────────────────────
+
+export function showGate() {
+  document.getElementById('gateOverlay').style.display = 'flex';
+}
+
+export function hideGate() {
+  document.getElementById('gateOverlay').style.display = 'none';
+}
+
+export function showChoiceScreen() {
+  document.getElementById('gateChoice').style.display = 'flex';
+  document.getElementById('gatePasscode').style.display = 'none';
+}
+
+export function showPasscodeScreen() {
+  document.getElementById('gateChoice').style.display = 'none';
+  document.getElementById('gatePasscode').style.display = 'flex';
+  document.getElementById('gateError').style.display = 'none';
+  const input = document.getElementById('passcodeInput');
+  input.value = '';
+  input.focus();
+}
+
+export function showGateError() {
+  document.getElementById('gateError').style.display = 'block';
+  const input = document.getElementById('passcodeInput');
+  input.value = '';
+  input.focus();
+}
+
+export function getPasscodeInput() {
+  return document.getElementById('passcodeInput').value;
+}
+
+/**
+ * Applies the current role to the UI: toggles the guest-mode class
+ * (which hides edit affordances via CSS), disables the service-bar
+ * text fields for guests, and updates the role badge in the header.
+ * @param {'admin'|'guest'} role
+ */
+export function applyRole(role) {
+  const isGuest = role === 'guest';
+  document.body.classList.toggle('guest-mode', isGuest);
+
+  ['serviceName', 'serviceDate'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = isGuest;
+  });
+
+  const badge = document.getElementById('roleBadge');
+  if (badge) {
+    badge.textContent = isGuest ? '👁 Guest — view only' : '🔒 Admin';
+    badge.className = 'role-pill ' + (isGuest ? 'role-guest' : 'role-admin');
+  }
+}
+
 // ── Connection status + last updated ─────────────────────
 
 /**
@@ -102,7 +159,8 @@ export function renderRoster(roster, filter, dateStr) {
   const filtered = roster.filter(
     (p) =>
       p.name.toLowerCase().includes(filter) ||
-      p.role.toLowerCase().includes(filter),
+      p.role.toLowerCase().includes(filter) ||
+      (p.time || '').toLowerCase().includes(filter),
   );
 
   const tbody = document.getElementById('rosterBody');
@@ -129,6 +187,7 @@ export function renderRoster(roster, filter, dateStr) {
             ${escHtml(p.name)}
           </div>
         </td>
+        <td>${p.time ? escHtml(p.time) : '<span class="text-faint">—</span>'}</td>
         <td>${escHtml(p.role)}</td>
         <td>${badgeHTML(p.status)}</td>
         <td class="td-actions">
@@ -145,6 +204,7 @@ export function renderRoster(roster, filter, dateStr) {
 export function openModal(person) {
   document.getElementById('editName').value   = person.name;
   document.getElementById('editRole').value   = person.role;
+  document.getElementById('editTime').value   = person.time || '';
   document.getElementById('editStatus').value = person.status;
   document.getElementById('editModal').style.display = 'flex';
 }
@@ -157,6 +217,7 @@ export function getModalValues() {
   return {
     name:   document.getElementById('editName').value.trim(),
     role:   document.getElementById('editRole').value.trim(),
+    time:   document.getElementById('editTime').value.trim(),
     status: document.getElementById('editStatus').value,
   };
 }
@@ -167,6 +228,7 @@ export function getAddFormValues() {
   return {
     name:   document.getElementById('newName').value.trim(),
     role:   document.getElementById('newRole').value.trim(),
+    time:   document.getElementById('newTime').value.trim(),
     status: document.getElementById('newStatus').value,
   };
 }
@@ -174,6 +236,7 @@ export function getAddFormValues() {
 export function resetAddForm() {
   document.getElementById('newName').value   = '';
   document.getElementById('newRole').value   = '';
+  document.getElementById('newTime').value   = '';
   document.getElementById('newStatus').value = 'confirmed';
 }
 

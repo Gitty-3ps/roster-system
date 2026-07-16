@@ -2,6 +2,7 @@
  * app.js — Application controller.
  *
  * Features wired here:
+ *  • Access gate — Admin (passcode) vs Guest (view only)
  *  • Real-time roster sync (Firestore onSnapshot)
  *  • Offline-first (Firestore IndexedDB persistence)
  *  • "Last updated" + online/offline status indicator
@@ -38,9 +39,73 @@ import {
   getAddFormValues,
   resetAddForm,
   getFilterValue,
+  showGate,
+  hideGate,
+  showChoiceScreen,
+  showPasscodeScreen,
+  showGateError,
+  getPasscodeInput,
+  applyRole,
 } from './ui.js';
 
 import { downloadPDF } from './pdf.js';
+
+// ── Access gate (MVP auth) ────────────────────────────────
+//
+// TODO: this is a hardcoded MVP passcode. Replace with real
+// per-user auth (Firebase Auth, etc.) before this goes further
+// than a small trusted group.
+const ADMIN_PASSCODE = 'GraceBoard2026';
+const ROLE_KEY        = 'graceboard_role';
+
+let role = localStorage.getItem(ROLE_KEY); // 'admin' | 'guest' | null
+
+function _requireAdmin() {
+  if (role !== 'admin') {
+    showToast('View-only mode — enter the admin passcode to edit.');
+    return false;
+  }
+  return true;
+}
+
+function chooseAdmin() {
+  showPasscodeScreen();
+}
+
+function chooseGuest() {
+  role = 'guest';
+  localStorage.setItem(ROLE_KEY, role);
+  _enterApp();
+}
+
+function backToChoice() {
+  showChoiceScreen();
+}
+
+function submitPasscode() {
+  const entered = getPasscodeInput();
+  if (entered === ADMIN_PASSCODE) {
+    role = 'admin';
+    localStorage.setItem(ROLE_KEY, role);
+    _enterApp();
+  } else {
+    showGateError();
+  }
+}
+
+function logout() {
+  role = null;
+  localStorage.removeItem(ROLE_KEY);
+  if (_unsubscribe) _unsubscribe();
+  showChoiceScreen();
+  showGate();
+}
+
+function _enterApp() {
+  hideGate();
+  applyRole(role);
+  boot();
+}
 
 // ── State ─────────────────────────────────────────────────
 
@@ -52,6 +117,7 @@ let state = loadServiceState() ?? {
 let editingId      = null;
 let _currentRoster = [];      // in-memory cache of the live roster
 let _unsubscribe   = null;    // current Firestore listener teardown fn
+let _booted        = false;   // guards against double-booting
 
 // ── Internal helpers ──────────────────────────────────────
 
@@ -102,7 +168,7 @@ function checkSunsetReset() {
   }
 }
 
-// ── Week navigation ───────────────────────────────────────
+// ── Week navigation (available to both roles — browsing, not editing) ──
 
 function shiftWeek(dir) {
   const d = new Date(`${state.date}T12:00:00`);
@@ -121,6 +187,7 @@ function resetToNextSaturday() {
 }
 
 function onDateChange() {
+  if (!_requireAdmin()) { syncServiceBar(state); return; }
   const val = document.getElementById('serviceDate').value;
   if (!val) return;
   state.date = val;
@@ -130,15 +197,17 @@ function onDateChange() {
   _subscribe();
 }
 
-// ── Roster CRUD ───────────────────────────────────────────
+// ── Roster CRUD (admin only) ──────────────────────────────
 
 async function addPerson() {
-  const { name, role, status } = getAddFormValues();
-  if (!name || !role) { showToast('Enter a name and program part first.'); return; }
+  if (!_requireAdmin()) return;
+
+  const { name, role: part, time, status } = getAddFormValues();
+  if (!name || !part) { showToast('Enter a name and program part first.'); return; }
 
   const roster = [..._currentRoster];
   const id     = roster.length ? Math.max(...roster.map((r) => r.id)) + 1 : 1;
-  roster.push({ id, name, role, status });
+  roster.push({ id, name, role: part, time, status });
 
   await saveRoster(state.date, roster);
   resetAddForm();
@@ -147,6 +216,8 @@ async function addPerson() {
 }
 
 async function deletePerson(id) {
+  if (!_requireAdmin()) return;
+
   const person = _currentRoster.find((r) => r.id === id);
   if (!person) return;
   if (!confirm(`Remove ${person.name} from the roster?`)) return;
@@ -156,6 +227,8 @@ async function deletePerson(id) {
 }
 
 function openEdit(id) {
+  if (!_requireAdmin()) return;
+
   const person = _currentRoster.find((r) => r.id === id);
   if (!person) return;
   editingId = id;
@@ -163,11 +236,13 @@ function openEdit(id) {
 }
 
 async function saveEdit() {
-  const { name, role, status } = getModalValues();
-  if (!name || !role) { showToast('Name and program part are required.'); return; }
+  if (!_requireAdmin()) return;
+
+  const { name, role: part, time, status } = getModalValues();
+  if (!name || !part) { showToast('Name and program part are required.'); return; }
 
   const roster = _currentRoster.map((r) =>
-    r.id === editingId ? { ...r, name, role, status } : r,
+    r.id === editingId ? { ...r, name, role: part, time, status } : r,
   );
   await saveRoster(state.date, roster);
   closeModal();
@@ -175,7 +250,7 @@ async function saveEdit() {
   showToast('Changes saved.');
 }
 
-// ── PDF export ────────────────────────────────────────────
+// ── PDF export (available to both roles) ──────────────────
 
 async function handleDownloadPDF() {
   downloadPDF({
@@ -190,6 +265,7 @@ async function handleDownloadPDF() {
 // ── Event listeners ───────────────────────────────────────
 
 document.getElementById('serviceName').addEventListener('change', function () {
+  if (!_requireAdmin()) { this.value = state.name; return; }
   state.name = this.value.trim() || 'Saturday Service';
   _saveState();
 });
@@ -208,6 +284,11 @@ document.addEventListener('keydown', (e) => {
 // ── Expose methods for inline HTML handlers ───────────────
 
 window.app = {
+  chooseAdmin,
+  chooseGuest,
+  backToChoice,
+  submitPasscode,
+  logout,
   shiftWeek,
   resetToNextSaturday,
   onDateChange,
@@ -229,10 +310,25 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── Boot ──────────────────────────────────────────────────
+// The clock always runs. Everything roster-related waits until
+// a role has been chosen at the access gate.
 
-checkSunsetReset();
+function boot() {
+  if (_booted) return;
+  _booted = true;
+  checkSunsetReset();
+  _syncAll();
+  setInterval(checkSunsetReset, 60_000);
+}
+
 updateClock();
-_syncAll();
-
 setInterval(updateClock, 1_000);
-setInterval(checkSunsetReset, 60_000);
+
+if (role === 'admin' || role === 'guest') {
+  hideGate();
+  applyRole(role);
+  boot();
+} else {
+  showChoiceScreen();
+  showGate();
+}

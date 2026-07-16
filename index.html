@@ -18,6 +18,45 @@
 </head>
 <body>
 
+<!-- ── Access gate ──────────────────────────────────────────
+     Shown on first load (and after "Switch" / logout). Blocks the
+     app until the person picks Admin (passcode) or Guest (view only).
+     MVP: passcode is hardcoded in js/app.js — swap for real auth later. -->
+<div id="gateOverlay" class="gate-overlay">
+  <div class="gate-card">
+    <div class="gate-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 2L11 9H5l5.5 4-2 7L12 16l3.5 4-2-7L19 9h-6z"/>
+        </svg>
+      </div>
+      <span class="logo-title">GraceBoard</span>
+    </div>
+
+    <div id="gateChoice" class="gate-choice">
+      <p class="gate-hint">How are you accessing the roster today?</p>
+      <button class="btn btn-primary gate-btn" onclick="app.chooseAdmin()">🔒 Admin — edit roster</button>
+      <button class="btn gate-btn" onclick="app.chooseGuest()">👁 Guest — view only</button>
+    </div>
+
+    <div id="gatePasscode" class="gate-passcode" style="display:none">
+      <label for="passcodeInput">Enter admin passcode</label>
+      <input
+        id="passcodeInput"
+        type="password"
+        placeholder="Passcode"
+        autocomplete="off"
+        onkeydown="if (event.key === 'Enter') app.submitPasscode()"
+      />
+      <div id="gateError" class="gate-error" style="display:none">Incorrect passcode — try again.</div>
+      <div class="gate-passcode-actions">
+        <button class="btn" onclick="app.backToChoice()">← Back</button>
+        <button class="btn btn-primary" onclick="app.submitPasscode()">Unlock</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="app">
 
   <!-- ── Header ── -->
@@ -43,6 +82,11 @@
           &#x25CF; Connecting…
         </span>
         <span id="lastUpdated" class="last-updated" aria-live="polite"></span>
+      </div>
+      <!-- ── Current role + switch ── -->
+      <div class="role-row">
+        <span id="roleBadge" class="role-pill"></span>
+        <button id="switchRoleBtn" class="role-switch" onclick="app.logout()">Switch</button>
       </div>
     </div>
   </div>
@@ -106,6 +150,19 @@
         </datalist>
       </div>
       <div class="field">
+        <label for="newTime">
+          Time
+          <span class="optional-badge">optional</span>
+        </label>
+        <input id="newTime" type="text" placeholder="e.g. 9:00 AM" autocomplete="off" list="timeList" />
+        <datalist id="timeList">
+          <option value="9:00 AM"></option>
+          <option value="9:15 AM"></option>
+          <option value="9:30 AM"></option>
+          <option value="10:00 AM"></option>
+        </datalist>
+      </div>
+      <div class="field">
         <label for="newStatus">Status</label>
         <select id="newStatus">
           <option value="confirmed">Confirmed</option>
@@ -138,9 +195,10 @@
       <thead>
         <tr>
           <th scope="col">Name</th>
+          <th scope="col">Time</th>
           <th scope="col">Program part</th>
           <th scope="col">Status</th>
-          <th scope="col" style="text-align:right">Actions</th>
+          <th scope="col" id="actionsTh" style="text-align:right">Actions</th>
         </tr>
       </thead>
       <tbody id="rosterBody"></tbody>
@@ -166,6 +224,13 @@
       <div class="field">
         <label for="editRole">Program part</label>
         <input id="editRole" type="text" list="roleList" />
+      </div>
+      <div class="field">
+        <label for="editTime">
+          Time
+          <span class="optional-badge">optional</span>
+        </label>
+        <input id="editTime" type="text" list="timeList" placeholder="e.g. 9:00 AM" />
       </div>
       <div class="field">
         <label for="editStatus">Status</label>
