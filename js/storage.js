@@ -26,6 +26,9 @@ import {
 
 // ── YOUR FIREBASE CONFIG ──────────────────────────────────
 // Paste the config object from Firebase Console → Project Settings → Your apps
+
+// ─────────────────────────────────────────────────────────
+
 const firebaseConfig = {
   apiKey: "AIzaSyCh6FAqEkP5xv8XIo-JzYYncwrV7bOnHrA",
 
@@ -41,7 +44,7 @@ const firebaseConfig = {
 
   //measurementId: "G-HH7WGSKL82"
 };
-// ─────────────────────────────────────────────────────────
+
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = initializeFirestore(firebaseApp, {

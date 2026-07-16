@@ -45,3 +45,11 @@ select:focus {
   border-color: var(--color-brand);
   box-shadow: var(--focus-ring);
 }
+
+/* Disabled fields (used in guest/view-only mode) */
+input:disabled,
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--color-bg);
+}

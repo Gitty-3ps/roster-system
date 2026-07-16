@@ -99,12 +99,13 @@
 
 /* ── Add-person row ── */
 /*
-  4-column grid: [name] [role] [status] [button]
-  All data columns share space equally; button stays fixed width.
+  5 items: [name] [role] [time] [status] [button]
+  Auto-flow grid — wraps cleanly at any field count via the
+  responsive rules below rather than hard-coded column indices.
 */
 .add-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
+  grid-template-columns: 1.2fr 1.2fr 0.8fr 0.9fr auto;
   gap: var(--space-sm);
   align-items: end;
 }
@@ -188,19 +189,13 @@
     align-self: end;
   }
 
-  /* Add-row: name + role on row 1, status + button on row 2 */
+  /* Add-row: two fields per row, button spans full width at the end */
   .add-row {
     grid-template-columns: 1fr 1fr;
   }
 
-  /* Status and Add button side by side */
-  .add-row .field:nth-child(3) {
-    grid-column: 1;
-  }
-
   .add-row .btn {
-    grid-column: 2;
-    align-self: end;
+    grid-column: 1 / -1;
   }
 }
 
@@ -233,7 +228,6 @@
     grid-template-columns: 1fr;
   }
 
-  .add-row .field:nth-child(3),
   .add-row .btn {
     grid-column: 1;
   }

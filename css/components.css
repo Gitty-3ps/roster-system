@@ -42,6 +42,138 @@
 }
 
 
+/* ── Access gate ─────────────────────────────────────────── */
+.gate-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg);
+  z-index: var(--z-gate);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.gate-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--color-surface);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.75rem;
+  text-align: center;
+}
+
+.gate-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.gate-logo .logo-mark {
+  width: 44px;
+  height: 44px;
+}
+
+.gate-logo .logo-mark svg {
+  width: 24px;
+  height: 24px;
+}
+
+.gate-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.gate-choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.gate-btn {
+  width: 100%;
+  height: 44px;
+}
+
+.gate-passcode {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  text-align: left;
+}
+
+.gate-passcode label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.gate-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger-text);
+}
+
+.gate-passcode-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+.gate-passcode-actions .btn {
+  flex: 1;
+}
+
+
+/* ── Role badge (header) ─────────────────────────────────── */
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.role-admin {
+  background: var(--color-brand-bg);
+  color: var(--color-brand-dark);
+}
+
+.role-guest {
+  background: var(--color-pending-bg);
+  color: var(--color-pending-text);
+}
+
+.role-switch {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.role-switch:hover {
+  color: var(--color-text-muted);
+}
+
+
 /* ── Clock ───────────────────────────────────────────────── */
 .clock {
   font-size: var(--font-size-xl);
@@ -89,6 +221,19 @@
   font-size: 10px;
   color: var(--color-brand);
   background: var(--color-brand-bg);
+  border-radius: var(--radius-full);
+  padding: 2px 7px;
+  font-weight: 500;
+}
+
+.optional-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 10px;
+  color: var(--color-text-faint);
+  background: var(--color-surface-muted);
+  border: 0.5px solid var(--color-border);
   border-radius: var(--radius-full);
   padding: 2px 7px;
   font-weight: 500;
@@ -162,7 +307,7 @@
 /* ── Add-person form ─────────────────────────────────────── */
 .add-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
+  grid-template-columns: 1.2fr 1.2fr 0.8fr 0.9fr auto;
   gap: var(--space-sm);
   align-items: end;
 }
@@ -284,6 +429,10 @@ tbody td {
   padding: 10px 1.25rem;
   color: var(--color-text);
   vertical-align: middle;
+}
+
+.text-faint {
+  color: var(--color-text-faint);
 }
 
 
@@ -460,4 +609,16 @@ tbody td {
   font-size: var(--font-size-xs);
   color: var(--color-text-faint);
   white-space: nowrap;
+}
+
+
+/* ── Guest / view-only mode ──────────────────────────────── */
+/* Anything that mutates roster data is hidden when role = guest.
+   Defense-in-depth: app.js also blocks these actions in JS,
+   this just keeps the UI honest about what's clickable. */
+body.guest-mode .add-section,
+body.guest-mode .editable-badge,
+body.guest-mode #actionsTh,
+body.guest-mode .td-actions {
+  display: none;
 }

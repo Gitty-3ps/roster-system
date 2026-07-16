@@ -66,10 +66,11 @@ export function downloadPDF({ serviceName, serviceDate, roster, onError, onSucce
   // ── Table ──
   doc.autoTable({
     startY: 71,
-    head:   [['#', 'Name', 'Program Part', 'Status']],
+    head:   [['#', 'Name', 'Time', 'Program Part', 'Status']],
     body:   roster.map((p, i) => [
       i + 1,
       p.name,
+      p.time || '—',
       p.role,
       p.status.charAt(0).toUpperCase() + p.status.slice(1),
     ]),
@@ -83,13 +84,14 @@ export function downloadPDF({ serviceName, serviceDate, roster, onError, onSucce
     },
     bodyStyles: { fontSize: 10, cellPadding: 4 },
     columnStyles: {
-      0: { cellWidth: 12, halign: 'center', textColor: [130, 130, 130] },
-      1: { cellWidth: 60 },
-      2: { cellWidth: 80 },
-      3: { cellWidth: 35 },
+      0: { cellWidth: 10, halign: 'center', textColor: [130, 130, 130] },
+      1: { cellWidth: 48 },
+      2: { cellWidth: 22, halign: 'center' },
+      3: { cellWidth: 65 },
+      4: { cellWidth: 27 },
     },
     didParseCell(data) {
-      if (data.column.index === 3 && data.section === 'body') {
+      if (data.column.index === 4 && data.section === 'body') {
         const v = data.cell.raw.toLowerCase();
         if      (v === 'confirmed') data.cell.styles.textColor = [59, 109, 17];
         else if (v === 'pending')   data.cell.styles.textColor = [133, 79, 11];
