@@ -41,12 +41,6 @@ The choice is remembered in `localStorage` so people aren't re-prompted on
 every visit. The **Switch** link in the header clears it and returns to the
 gate.
 
-**MVP note:** the admin passcode is hardcoded in `js/app.js`:
-
-```js
-const ADMIN_PASSCODE = 'GraceBoard2026';
-```
-
 Change this to whatever you want to hand out to your team. This is a simple
 shared-secret check, not real authentication — anyone with the passcode (or
 who reads the JS source) can get admin access. It's fine for a small trusted
