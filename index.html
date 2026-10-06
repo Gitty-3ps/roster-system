@@ -131,12 +131,8 @@
     <div class="section-title">Add person to roster</div>
     <div class="add-row">
       <div class="field">
-        <label for="newName">Name</label>
-        <input id="newName" type="text" placeholder="Full name" autocomplete="off" />
-      </div>
-      <div class="field">
-        <label for="newRole">Program part</label>
-        <input id="newRole" type="text" placeholder="e.g. Opening Prayer" autocomplete="off" list="roleList" />
+        <label for="newRole">Program Part</label>
+        <input id="newRole" type="text" placeholder="e.g. Scripture Reading" autocomplete="off" list="roleList" />
         <datalist id="roleList">
           <option value="Deacon"></option>
           <option value="Deaconess"></option>
@@ -158,6 +154,10 @@
         </datalist>
       </div>
       <div class="field">
+        <label for="newName">Name</label>
+        <input id="newName" type="text" placeholder="Full name" autocomplete="off" />
+      </div>
+      <div class="field">
         <label for="newTime">
           Time
           <span class="optional-badge">optional</span>
@@ -169,6 +169,10 @@
           <option value="9:30 AM"></option>
           <option value="10:00 AM"></option>
         </datalist>
+      </div>
+      <div class="field">
+        <label for="newNote">Note</label>
+        <input id="newNote" type="text" autocomplete="off" />
       </div>
       <div class="field">
         <label for="newStatus">Status</label>
@@ -202,9 +206,10 @@
     <table aria-label="Service roster">
       <thead>
         <tr>
+          <th scope="col">Program Part</th>
           <th scope="col">Name</th>
           <th scope="col">Time</th>
-          <th scope="col">Program part</th>
+          <th scope="col">Note</th>
           <th scope="col">Status</th>
           <th scope="col" id="actionsTh" style="text-align:right">Actions</th>
         </tr>
@@ -226,12 +231,12 @@
     <h3 id="editModalTitle">Edit roster entry</h3>
     <div class="modal-fields">
       <div class="field">
-        <label for="editName">Name</label>
-        <input id="editName" type="text" />
+        <label for="editRole">Program Part</label>
+        <input id="editRole" type="text" list="roleList" />
       </div>
       <div class="field">
-        <label for="editRole">Program part</label>
-        <input id="editRole" type="text" list="roleList" />
+        <label for="editName">Name</label>
+        <input id="editName" type="text" />
       </div>
       <div class="field">
         <label for="editTime">

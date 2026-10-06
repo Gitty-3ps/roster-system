@@ -226,6 +226,7 @@ export function getModalValues() {
 
 export function getAddFormValues() {
   return {
+    name:   document.getElementById('newNote').value.trim(),
     name:   document.getElementById('newName').value.trim(),
     role:   document.getElementById('newRole').value.trim(),
     time:   document.getElementById('newTime').value.trim(),
@@ -234,6 +235,7 @@ export function getAddFormValues() {
 }
 
 export function resetAddForm() {
+  document.getElementById('newNote').value   = '';
   document.getElementById('newName').value   = '';
   document.getElementById('newRole').value   = '';
   document.getElementById('newTime').value   = '';
