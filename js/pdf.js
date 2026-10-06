@@ -37,7 +37,7 @@ export function downloadPDF({ serviceName, serviceDate, roster, onError, onSucce
   doc.rect(0, 0, pageWidth, 38, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22); doc.setFont('helvetica', 'bold');
-  doc.text('GraceBoard', 14, 16);
+  doc.text('GaceBoard', 14, 16);
   doc.setFontSize(11); doc.setFont('helvetica', 'normal');
   doc.text('Church Service Roster', 14, 24);
   doc.setFontSize(9);
@@ -104,7 +104,7 @@ export function downloadPDF({ serviceName, serviceDate, roster, onError, onSucce
   // ── Footer ──
   const finalY = doc.lastAutoTable.finalY + 8;
   doc.setFontSize(8); doc.setTextColor(150, 150, 150);
-  doc.text(`GraceBoard  •  Printed ${reportTime}`, 14, finalY);
+  doc.text(`GaceBoard  •  Printed ${reportTime}`, 14, finalY);
 
   const filename = `${serviceName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${serviceDate}-roster.pdf`;
   doc.save(filename);
