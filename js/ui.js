@@ -153,52 +153,67 @@ export function updateSunsetNotice(sunsetText) {
   document.getElementById('sunsetTime').textContent = sunsetText;
 }
 
-// ── Roster table ──────────────────────────────────────────
+// ── Roster board ──────────────────────────────────────────
 
 export function renderRoster(roster, filter, dateStr) {
   const filtered = roster.filter(
     (p) =>
       p.name.toLowerCase().includes(filter) ||
       p.role.toLowerCase().includes(filter) ||
-      (p.time || '').toLowerCase().includes(filter),
+      (p.time || '').toLowerCase().includes(filter) ||
+      (p.note || '').toLowerCase().includes(filter),
   );
 
-  const tbody = document.getElementById('rosterBody');
+  const list = document.getElementById('rosterList');
   const empty = document.getElementById('emptyState');
   const count = document.getElementById('rosterCount');
 
   const noun = roster.length === 1 ? 'person' : 'people';
   count.textContent = `${roster.length} ${noun} on roster for ${formatDateShort(dateStr)}`;
 
-  if (filtered.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
+  if (roster.length === 0) {
+    empty.innerHTML = '<span class="empty-icon" aria-hidden="true">✦</span><span>No one on the roster yet — add the first person above.</span>';
+    empty.style.display = 'flex';
+  } else if (filtered.length === 0) {
+    empty.textContent = 'No entries match your search.';
+    empty.style.display = 'flex';
+  } else {
+    empty.style.display = 'none';
   }
 
-  empty.style.display = 'none';
-  tbody.innerHTML = filtered
-    .map(
-      (p) => {
-        const canReorder = !document.body.classList.contains('guest-mode');
-        return `
-      <tr data-entry-id="${p.id}" draggable="${canReorder}"${canReorder ? ' title="Drag to reorder"' : ''}>
-        <td>
-          <div class="name-cell">
-            <span class="avatar">${initials(p.name)}</span>
-            ${escHtml(p.name)}
-          </div>
-        </td>
-        <td>${p.time ? escHtml(p.time) : '<span class="text-faint">—</span>'}</td>
-        <td>${escHtml(p.role)}</td>
-        <td>${badgeHTML(p.status)}</td>
-        <td class="td-actions">
-          <button class="btn btn-sm" onclick="app.openEdit(${p.id})">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="app.deletePerson(${p.id})">Remove</button>
-        </td>
-      </tr>`;
-      },
-    )
+  const canReorder = !document.body.classList.contains('guest-mode');
+  list.innerHTML = filtered.map((person) => `
+    <div class="roster-entry-wrap" data-status="${escHtml(person.status)}">
+      ${canReorder ? `<div class="swipe-delete-bg" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg>
+        <span>Release to remove</span>
+      </div>` : ''}
+      <article class="roster-entry" data-entry-id="${person.id}" data-status="${escHtml(person.status)}" draggable="${canReorder}"${canReorder ? ' title="Drag from the grip to reorder"' : ''}>
+        <div class="entry-row">
+          <span class="entry-role">${escHtml(person.role)}</span>
+          <span class="entry-person">
+            <span class="avatar">${initials(person.name)}</span>
+            <span class="entry-name">${escHtml(person.name)}</span>
+          </span>
+          ${badgeHTML(person.status)}
+          ${canReorder ? `
+            <div class="entry-actions">
+              <span class="entry-grip" role="button" aria-label="Drag to reorder" title="Drag to reorder">⠿</span>
+              <button class="btn btn-sm entry-icon-button" aria-label="Edit ${escHtml(person.role)} for ${escHtml(person.name)}" onclick="app.openEdit(${person.id})">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 4 4 4M4 20l4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20Z"/></svg><span class="entry-action-label">Edit</span>
+              </button>
+              <button class="btn btn-sm btn-danger entry-icon-button" aria-label="Remove ${escHtml(person.role)} for ${escHtml(person.name)}" onclick="app.deletePerson(${person.id})">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg><span class="entry-action-label">Remove</span>
+              </button>
+            </div>` : ''}
+        </div>
+        ${(person.time || person.note) ? `
+          <div class="entry-details">
+            ${person.time ? `<span class="entry-time">${escHtml(person.time)}</span>` : ''}
+            ${person.note ? `<span class="entry-note">${escHtml(person.note)}</span>` : ''}
+          </div>` : ''}
+      </article>
+    </div>`)
     .join('');
 }
 
@@ -208,6 +223,7 @@ export function openModal(person) {
   document.getElementById('editName').value   = person.name;
   document.getElementById('editRole').value   = person.role;
   document.getElementById('editTime').value   = person.time || '';
+  document.getElementById('editNote').value   = person.note || '';
   document.getElementById('editStatus').value = person.status;
   document.getElementById('editModal').style.display = 'flex';
 }
@@ -221,6 +237,7 @@ export function getModalValues() {
     name:   document.getElementById('editName').value.trim(),
     role:   document.getElementById('editRole').value.trim(),
     time:   document.getElementById('editTime').value.trim(),
+    note:   document.getElementById('editNote').value.trim(),
     status: document.getElementById('editStatus').value,
   };
 }
@@ -229,10 +246,10 @@ export function getModalValues() {
 
 export function getAddFormValues() {
   return {
-    name:   document.getElementById('newNote').value.trim(),
     name:   document.getElementById('newName').value.trim(),
     role:   document.getElementById('newRole').value.trim(),
     time:   document.getElementById('newTime').value.trim(),
+    note:   document.getElementById('newNote').value.trim(),
     status: document.getElementById('newStatus').value,
   };
 }

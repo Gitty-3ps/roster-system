@@ -202,12 +202,12 @@ function onDateChange() {
 async function addPerson() {
   if (!_requireAdmin()) return;
 
-  const { name, role: part, time, status } = getAddFormValues();
+  const { name, role: part, time, note, status } = getAddFormValues();
   if (!name || !part) { showToast('Enter a name and program part first.'); return; }
 
   const roster = [..._currentRoster];
   const id     = roster.length ? Math.max(...roster.map((r) => r.id)) + 1 : 1;
-  roster.push({ id, name, role: part, time, status });
+  roster.push({ id, name, role: part, time, note, status });
 
   await saveRoster(state.date, roster);
   resetAddForm();
@@ -215,12 +215,12 @@ async function addPerson() {
   // UI updates automatically via the onSnapshot listener
 }
 
-async function deletePerson(id) {
+async function deletePerson(id, askConfirmation = true) {
   if (!_requireAdmin()) return;
 
   const person = _currentRoster.find((r) => r.id === id);
   if (!person) return;
-  if (!confirm(`Remove ${person.name} from the roster?`)) return;
+  if (askConfirmation && !confirm(`Remove ${person.name} from the roster?`)) return;
 
   await saveRoster(state.date, _currentRoster.filter((r) => r.id !== id));
   showToast(`${person.name} removed.`);
@@ -238,11 +238,11 @@ function openEdit(id) {
 async function saveEdit() {
   if (!_requireAdmin()) return;
 
-  const { name, role: part, time, status } = getModalValues();
+  const { name, role: part, time, note, status } = getModalValues();
   if (!name || !part) { showToast('Name and program part are required.'); return; }
 
   const roster = _currentRoster.map((r) =>
-    r.id === editingId ? { ...r, name, role: part, time, status } : r,
+    r.id === editingId ? { ...r, name, role: part, time, note, status } : r,
   );
   await saveRoster(state.date, roster);
   closeModal();
@@ -254,13 +254,13 @@ async function reorderPerson(sourceId, targetId, insertAfter) {
   if (!_requireAdmin()) return;
 
   const sourceIndex = _currentRoster.findIndex((person) => person.id === sourceId);
-  const targetIndex = _currentRoster.findIndex((person) => person.id === targetId);
-  if (sourceIndex === -1 || targetIndex === -1 || sourceId === targetId) return;
+  if (sourceIndex === -1) return;
+  if (sourceId === targetId) return;
 
   const roster = [..._currentRoster];
   const [person] = roster.splice(sourceIndex, 1);
-  const adjustedTargetIndex = roster.findIndex((entry) => entry.id === targetId);
-  roster.splice(adjustedTargetIndex + (insertAfter ? 1 : 0), 0, person);
+  const targetIndex = targetId === null ? -1 : roster.findIndex((entry) => entry.id === targetId);
+  roster.splice(targetIndex === -1 ? roster.length : targetIndex + (insertAfter ? 1 : 0), 0, person);
 
   await saveRoster(state.date, roster);
   _currentRoster = roster;
@@ -291,54 +291,182 @@ document.getElementById('editModal').addEventListener('click', function (e) {
   if (e.target === this) closeModal();
 });
 
-const rosterBody = document.getElementById('rosterBody');
+const rosterList = document.getElementById('rosterList');
 let draggingId = null;
+let pointerDrag = null;
+let swipeGesture = null;
 
-rosterBody.addEventListener('dragstart', (event) => {
+function clearDragStyles() {
+  rosterList.querySelectorAll('.dragging, .drag-over-before, .drag-over-after').forEach((item) => {
+    item.classList.remove('dragging', 'drag-over-before', 'drag-over-after');
+  });
+}
+
+function getDropTarget(clientY, target) {
+  const card = target.closest('.roster-entry[data-entry-id]');
+  if (!card || !rosterList.contains(card)) return null;
+  const insertAfter = clientY > card.getBoundingClientRect().top + card.getBoundingClientRect().height / 2;
+  return { card, insertAfter };
+}
+
+function showDropIndicator(clientY, target) {
+  rosterList.querySelectorAll('.drag-over-before, .drag-over-after').forEach((item) => {
+    item.classList.remove('drag-over-before', 'drag-over-after');
+  });
+  const dropTarget = getDropTarget(clientY, target);
+  if (dropTarget) {
+    dropTarget.card.classList.add(dropTarget.insertAfter ? 'drag-over-after' : 'drag-over-before');
+  }
+  return dropTarget;
+}
+
+async function finishPointerDrag(event, cancelled = false) {
+  if (!pointerDrag || event.pointerId !== pointerDrag.pointerId) return;
+
+  const { handle, sourceId, active } = pointerDrag;
+  pointerDrag = null;
+  draggingId = null;
+  if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);
+
+  if (active && !cancelled) {
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const dropTarget = target && getDropTarget(event.clientY, target);
+    await reorderPerson(
+      sourceId,
+      dropTarget ? Number(dropTarget.card.dataset.entryId) : null,
+      dropTarget ? dropTarget.insertAfter : false,
+    );
+  }
+
+  clearDragStyles();
+}
+
+async function finishSwipe(event, cancelled = false) {
+  if (!swipeGesture || event.pointerId !== swipeGesture.pointerId) return;
+
+  const { card, wrapper, sourceId, startX, active } = swipeGesture;
+  const deleteThreshold = Math.min(card.offsetWidth * 0.65, 170);
+  const shouldRemove = active && !cancelled && event.clientX - startX >= deleteThreshold;
+  swipeGesture = null;
+  if (card.hasPointerCapture(event.pointerId)) card.releasePointerCapture(event.pointerId);
+
+  if (shouldRemove) {
+    event.preventDefault();
+    card.classList.add('swipe-removing');
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    await deletePerson(sourceId, false);
+    return;
+  }
+
+  card.style.transform = '';
+  wrapper.classList.remove('swipe-active');
+}
+
+rosterList.addEventListener('dragstart', (event) => {
   if (!_requireAdmin()) { event.preventDefault(); return; }
   if (event.target.closest('button, a, input, select, textarea')) {
     event.preventDefault();
     return;
   }
 
-  const row = event.target.closest('tr[data-entry-id]');
-  if (!row) return;
-  draggingId = Number(row.dataset.entryId);
+  const card = event.target.closest('.roster-entry[data-entry-id]');
+  if (!card) return;
+  draggingId = Number(card.dataset.entryId);
   event.dataTransfer.effectAllowed = 'move';
   event.dataTransfer.setData('text/plain', String(draggingId));
-  row.classList.add('dragging');
+  card.classList.add('dragging');
 });
 
-rosterBody.addEventListener('dragover', (event) => {
-  const row = event.target.closest('tr[data-entry-id]');
-  if (draggingId === null || !row) return;
+rosterList.addEventListener('pointerdown', (event) => {
+  if (event.pointerType === 'mouse' || !_requireAdmin()) return;
+  const handle = event.target.closest('.entry-grip');
+  const card = handle && handle.closest('.roster-entry[data-entry-id]');
+  if (handle && card) {
+    event.preventDefault();
+    pointerDrag = {
+      pointerId: event.pointerId,
+      handle,
+      sourceId: Number(card.dataset.entryId),
+      startY: event.clientY,
+      active: false,
+    };
+    handle.setPointerCapture(event.pointerId);
+    return;
+  }
+
+  const swipeCard = event.target.closest('.roster-entry[data-entry-id]');
+  if (!swipeCard || event.target.closest('button, a, input, select, textarea')) return;
+  const wrapper = swipeCard.closest('.roster-entry-wrap');
+  swipeGesture = {
+    pointerId: event.pointerId,
+    card: swipeCard,
+    wrapper,
+    sourceId: Number(swipeCard.dataset.entryId),
+    startX: event.clientX,
+    startY: event.clientY,
+    active: false,
+  };
+  swipeCard.setPointerCapture(event.pointerId);
+});
+
+rosterList.addEventListener('pointermove', (event) => {
+  if (swipeGesture && event.pointerId === swipeGesture.pointerId) {
+    const deltaX = event.clientX - swipeGesture.startX;
+    const deltaY = event.clientY - swipeGesture.startY;
+    if (!swipeGesture.active && (deltaX < 8 || Math.abs(deltaX) <= Math.abs(deltaY))) return;
+    event.preventDefault();
+    swipeGesture.active = true;
+    swipeGesture.wrapper.classList.add('swipe-active');
+    const distance = Math.min(Math.max(deltaX, 0), swipeGesture.card.offsetWidth * 0.72);
+    swipeGesture.card.style.transform = `translateX(${distance}px)`;
+    return;
+  }
+
+  if (!pointerDrag || event.pointerId !== pointerDrag.pointerId) return;
+
+  if (!pointerDrag.active && Math.abs(event.clientY - pointerDrag.startY) < 8) return;
+  event.preventDefault();
+
+  if (!pointerDrag.active) {
+    pointerDrag.active = true;
+    draggingId = pointerDrag.sourceId;
+    pointerDrag.handle.closest('.roster-entry').classList.add('dragging');
+  }
+
+  const target = document.elementFromPoint(event.clientX, event.clientY);
+  if (target) showDropIndicator(event.clientY, target);
+});
+
+rosterList.addEventListener('dragover', (event) => {
+  const card = event.target.closest('.roster-entry[data-entry-id]');
+  if (draggingId === null) return;
 
   event.preventDefault();
   event.dataTransfer.dropEffect = 'move';
-  rosterBody.querySelectorAll('.drag-over-before, .drag-over-after').forEach((item) => {
-    item.classList.remove('drag-over-before', 'drag-over-after');
-  });
-  const insertAfter = event.clientY > row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
-  row.classList.add(insertAfter ? 'drag-over-after' : 'drag-over-before');
+  if (card) showDropIndicator(event.clientY, event.target);
 });
 
-rosterBody.addEventListener('drop', async (event) => {
-  const row = event.target.closest('tr[data-entry-id]');
-  if (draggingId === null || !row) return;
+rosterList.addEventListener('drop', async (event) => {
+  if (draggingId === null) return;
 
   event.preventDefault();
-  const targetId = Number(row.dataset.entryId);
-  const insertAfter = event.clientY > row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+  const card = event.target.closest('.roster-entry[data-entry-id]');
+  const targetId = card ? Number(card.dataset.entryId) : null;
+  const insertAfter = targetId !== null &&
+    event.clientY > card.getBoundingClientRect().top + card.getBoundingClientRect().height / 2;
   await reorderPerson(draggingId, targetId, insertAfter);
   draggingId = null;
 });
 
-rosterBody.addEventListener('dragend', () => {
+rosterList.addEventListener('dragend', () => {
   draggingId = null;
-  rosterBody.querySelectorAll('.dragging, .drag-over-before, .drag-over-after').forEach((row) => {
-    row.classList.remove('dragging', 'drag-over-before', 'drag-over-after');
-  });
+  clearDragStyles();
 });
+
+rosterList.addEventListener('pointerup', (event) => finishPointerDrag(event));
+rosterList.addEventListener('pointercancel', (event) => finishPointerDrag(event, true));
+rosterList.addEventListener('pointerup', (event) => finishSwipe(event));
+rosterList.addEventListener('pointercancel', (event) => finishSwipe(event, true));
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeModal();

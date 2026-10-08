@@ -189,7 +189,7 @@
     </div>
   </div>
 
-  <!-- ── Roster table ── -->
+  <!-- ── Roster board ── -->
   <div class="roster-card">
     <div class="roster-header">
       <span class="roster-count" id="rosterCount" aria-live="polite">0 people on roster</span>
@@ -206,22 +206,8 @@
         <button class="btn btn-sm" onclick="app.downloadPDF()">&#x2193; Download PDF</button>
       </div>
     </div>
-    <table aria-label="Service roster">
-      <thead>
-        <tr>
-          <th scope="col">Program Part</th>
-          <th scope="col">Name</th>
-          <th scope="col">Time</th>
-          <th scope="col">Note</th>
-          <th scope="col">Status</th>
-        </tr>
-      </thead>
-      <tbody id="rosterBody"></tbody>
-    </table>
-    <div class="empty" id="emptyState" style="display:none" aria-live="polite">
-      <div class="empty-icon" aria-hidden="true">✦</div>
-      <p>No one on the roster yet — add the first person above.</p>
-    </div>
+    <div class="roster-empty" id="emptyState" style="display:none" aria-live="polite"></div>
+    <div class="roster-board" id="rosterList" aria-label="Service roster"></div>
   </div>
 
 </div><!-- /.app -->
@@ -246,6 +232,13 @@
           <span class="optional-badge">optional</span>
         </label>
         <input id="editTime" type="text" list="timeList" placeholder="e.g. 9:00 AM" />
+      </div>
+      <div class="field">
+        <label for="editNote">
+          Note
+          <span class="optional-badge">optional</span>
+        </label>
+        <input id="editNote" type="text" />
       </div>
       <div class="field">
         <label for="editStatus">Status</label>
