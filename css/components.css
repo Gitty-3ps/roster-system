@@ -422,6 +422,11 @@ tbody tr {
   transition: background var(--transition-fast);
 }
 
+tbody tr[draggable="true"] { cursor: grab; }
+tbody tr.dragging          { opacity: 0.45; cursor: grabbing; }
+tbody tr.drag-over-before  { box-shadow: inset 0 2px 0 var(--color-brand); }
+tbody tr.drag-over-after   { box-shadow: inset 0 -2px 0 var(--color-brand); }
+
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover      { background: var(--color-surface-muted); }
 

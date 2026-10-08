@@ -139,30 +139,30 @@
           <option value="Announcements"></option>
           <option value="Call to Worship"></option>
           <option value="Invocation"></option>
-          <option value="Divine Service Opening Hymn"></option>          <option value="Divine Service Opening Hymn"></option>
+          <option value="Divine Service Opening Hymn"></option>
           <option value="Welcome"></option>
           <option value="Children's Story"></option>
           <option value="Special Song"></option>
-          <option value="Offetory"></option>
+          <option value="Offertory"></option>
           <option value="Scripture Reading"></option>
-          <option value="Pastorial Prayer"></option>
+          <option value="Pastoral Prayer"></option>
           <option value="Introduction of Speaker"></option>
           <option value="Meditation Song"></option>
           <option value="Speaker"></option>
           <option value="Closing Hymn"></option>
-          <option value="Benidiction"></option>
+          <option value="Benediction"></option>
         </datalist>
       </div>
       <div class="field">
         <label for="newName">Name</label>
-        <input id="newName" type="text" placeholder="Full name" autocomplete="off" />
+        <input id="newName" type="text" placeholder="e.g. Bro. John Doe" autocomplete="off" />
       </div>
       <div class="field">
         <label for="newTime">
           Time
           <span class="optional-badge">optional</span>
         </label>
-        <input id="newTime" type="text" placeholder="e.g. 9:00 AM" autocomplete="off" list="timeList" />
+        <input id="newTime" type="text" placeholder="e.g. 11:00 AM" autocomplete="off" list="timeList" />
         <datalist id="timeList">
           <option value="9:00 AM"></option>
           <option value="9:15 AM"></option>
@@ -171,10 +171,13 @@
         </datalist>
       </div>
       <div class="field">
-        <label for="newNote">Note</label>
-        <input id="newNote" type="text" autocomplete="off" />
+        <label for="newNote">
+          Note
+          <span class="optional-badge">optional</span>
+        </label>
+        <input id="newNote" placeholder="eg. read Timothy 3:16KJV" type="text" autocomplete="off" />
       </div>
-      <div class="field">
+      <div class="field"> 
         <label for="newStatus">Status</label>
         <select id="newStatus">
           <option value="confirmed">Confirmed</option>
@@ -211,7 +214,6 @@
           <th scope="col">Time</th>
           <th scope="col">Note</th>
           <th scope="col">Status</th>
-          <th scope="col" id="actionsTh" style="text-align:right">Actions</th>
         </tr>
       </thead>
       <tbody id="rosterBody"></tbody>

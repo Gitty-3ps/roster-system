@@ -66,12 +66,13 @@ export function downloadPDF({ serviceName, serviceDate, roster, onError, onSucce
   // ── Table ──
   doc.autoTable({
     startY: 71,
-    head:   [['#', 'Name', 'Time', 'Program Part', 'Status']],
+    head:   [['#', 'Program Part', 'Name', 'Time', 'Note', 'Status']],
     body:   roster.map((p, i) => [
       i + 1,
+      p.role,
       p.name,
       p.time || '—',
-      p.role,
+      p.note || '—',
       p.status.charAt(0).toUpperCase() + p.status.slice(1),
     ]),
     theme: 'grid',
@@ -84,11 +85,12 @@ export function downloadPDF({ serviceName, serviceDate, roster, onError, onSucce
     },
     bodyStyles: { fontSize: 10, cellPadding: 4 },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center', textColor: [130, 130, 130] },
-      1: { cellWidth: 48 },
-      2: { cellWidth: 22, halign: 'center' },
-      3: { cellWidth: 65 },
-      4: { cellWidth: 27 },
+      0: { cellWidth: 14, halign: 'center', textColor: [130, 130, 130] }, // #
+      1: { cellWidth: 46 , halign: 'center' },                                               // biggest
+      2: { cellWidth: 40, halign: 'center' },
+      3: { cellWidth: 22 , halign: 'center'},
+      4: { cellWidth: 40 , halign: 'center'},                                               // biggest
+      5: { cellWidth: 24 , halign: 'center'},
     },
     didParseCell(data) {
       if (data.column.index === 4 && data.section === 'body') {

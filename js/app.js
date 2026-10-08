@@ -250,6 +250,23 @@ async function saveEdit() {
   showToast('Changes saved.');
 }
 
+async function reorderPerson(sourceId, targetId, insertAfter) {
+  if (!_requireAdmin()) return;
+
+  const sourceIndex = _currentRoster.findIndex((person) => person.id === sourceId);
+  const targetIndex = _currentRoster.findIndex((person) => person.id === targetId);
+  if (sourceIndex === -1 || targetIndex === -1 || sourceId === targetId) return;
+
+  const roster = [..._currentRoster];
+  const [person] = roster.splice(sourceIndex, 1);
+  const adjustedTargetIndex = roster.findIndex((entry) => entry.id === targetId);
+  roster.splice(adjustedTargetIndex + (insertAfter ? 1 : 0), 0, person);
+
+  await saveRoster(state.date, roster);
+  _currentRoster = roster;
+  renderRoster(roster, getFilterValue(), state.date);
+}
+
 // ── PDF export (available to both roles) ──────────────────
 
 async function handleDownloadPDF() {
@@ -272,6 +289,55 @@ document.getElementById('serviceName').addEventListener('change', function () {
 
 document.getElementById('editModal').addEventListener('click', function (e) {
   if (e.target === this) closeModal();
+});
+
+const rosterBody = document.getElementById('rosterBody');
+let draggingId = null;
+
+rosterBody.addEventListener('dragstart', (event) => {
+  if (!_requireAdmin()) { event.preventDefault(); return; }
+  if (event.target.closest('button, a, input, select, textarea')) {
+    event.preventDefault();
+    return;
+  }
+
+  const row = event.target.closest('tr[data-entry-id]');
+  if (!row) return;
+  draggingId = Number(row.dataset.entryId);
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', String(draggingId));
+  row.classList.add('dragging');
+});
+
+rosterBody.addEventListener('dragover', (event) => {
+  const row = event.target.closest('tr[data-entry-id]');
+  if (draggingId === null || !row) return;
+
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  rosterBody.querySelectorAll('.drag-over-before, .drag-over-after').forEach((item) => {
+    item.classList.remove('drag-over-before', 'drag-over-after');
+  });
+  const insertAfter = event.clientY > row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+  row.classList.add(insertAfter ? 'drag-over-after' : 'drag-over-before');
+});
+
+rosterBody.addEventListener('drop', async (event) => {
+  const row = event.target.closest('tr[data-entry-id]');
+  if (draggingId === null || !row) return;
+
+  event.preventDefault();
+  const targetId = Number(row.dataset.entryId);
+  const insertAfter = event.clientY > row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+  await reorderPerson(draggingId, targetId, insertAfter);
+  draggingId = null;
+});
+
+rosterBody.addEventListener('dragend', () => {
+  draggingId = null;
+  rosterBody.querySelectorAll('.dragging, .drag-over-before, .drag-over-after').forEach((row) => {
+    row.classList.remove('dragging', 'drag-over-before', 'drag-over-after');
+  });
 });
 
 document.addEventListener('keydown', (e) => {
@@ -303,10 +369,15 @@ window.app = {
 
 // ── Service Worker registration (offline shell caching) ───
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch((err) => {
-    console.warn('Service Worker registration failed:', err);
-  });
+//if ('serviceWorker' in navigator) {
+//   navigator.serviceWorker.register('/sw.js').catch((err) => {
+//     console.warn('Service Worker registration failed:', err);
+//   });
+// }
+
+const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+if ('serviceWorker' in navigator && !isLocal) {
+  navigator.serviceWorker.register('sw.js');
 }
 
 // ── Boot ──────────────────────────────────────────────────

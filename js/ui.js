@@ -179,8 +179,10 @@ export function renderRoster(roster, filter, dateStr) {
   empty.style.display = 'none';
   tbody.innerHTML = filtered
     .map(
-      (p) => `
-      <tr>
+      (p) => {
+        const canReorder = !document.body.classList.contains('guest-mode');
+        return `
+      <tr data-entry-id="${p.id}" draggable="${canReorder}"${canReorder ? ' title="Drag to reorder"' : ''}>
         <td>
           <div class="name-cell">
             <span class="avatar">${initials(p.name)}</span>
@@ -194,7 +196,8 @@ export function renderRoster(roster, filter, dateStr) {
           <button class="btn btn-sm" onclick="app.openEdit(${p.id})">Edit</button>
           <button class="btn btn-sm btn-danger" onclick="app.deletePerson(${p.id})">Remove</button>
         </td>
-      </tr>`,
+      </tr>`;
+      },
     )
     .join('');
 }
