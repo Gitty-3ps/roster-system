@@ -59,6 +59,19 @@ Each person on the roster has:
   timed lineup. Shows as "—" in the table/PDF when left blank.
 - **Status** — Confirmed / Pending / Declined
 
+## Sabbath roster templates
+
+Admins can create reusable templates from the **Roster templates** section
+below the service date. Name and color each template, then add program parts
+with optional times and notes. Creating a template while a roster is open
+starts with that roster's program parts, times, and notes; assigned names
+aren't copied. Templates can be edited, deleted, and used to fill the selected
+Sabbath roster. Using a template replaces a non-empty roster only after
+confirmation. People remain unassigned until an admin edits each roster entry.
+
+Templates are stored in this browser's local storage and are available offline
+on this device; they do not sync to other devices.
+
 ---
 
 ## Architecture principles

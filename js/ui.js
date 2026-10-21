@@ -158,7 +158,7 @@ export function updateSunsetNotice(sunsetText) {
 export function renderRoster(roster, filter, dateStr) {
   const filtered = roster.filter(
     (p) =>
-      p.name.toLowerCase().includes(filter) ||
+      (p.name || '').toLowerCase().includes(filter) ||
       p.role.toLowerCase().includes(filter) ||
       (p.time || '').toLowerCase().includes(filter) ||
       (p.note || '').toLowerCase().includes(filter),
@@ -168,8 +168,14 @@ export function renderRoster(roster, filter, dateStr) {
   const empty = document.getElementById('emptyState');
   const count = document.getElementById('rosterCount');
 
-  const noun = roster.length === 1 ? 'person' : 'people';
-  count.textContent = `${roster.length} ${noun} on roster for ${formatDateShort(dateStr)}`;
+  const unassigned = roster.filter((person) => !person.name).length;
+  if (unassigned) {
+    const assigned = roster.length - unassigned;
+    count.textContent = `${assigned} assigned · ${unassigned} unassigned ${unassigned === 1 ? 'part' : 'parts'} for ${formatDateShort(dateStr)}`;
+  } else {
+    const noun = roster.length === 1 ? 'person' : 'people';
+    count.textContent = `${roster.length} ${noun} on roster for ${formatDateShort(dateStr)}`;
+  }
 
   if (roster.length === 0) {
     empty.innerHTML = '<span class="empty-icon" aria-hidden="true">✦</span><span>No one on the roster yet — add the first person above.</span>';
@@ -192,8 +198,8 @@ export function renderRoster(roster, filter, dateStr) {
         <div class="entry-row">
           <span class="entry-role">${escHtml(person.role)}</span>
           <span class="entry-person">
-            <span class="avatar">${initials(person.name)}</span>
-            <span class="entry-name">${escHtml(person.name)}</span>
+            <span class="avatar">${person.name ? initials(person.name) : '—'}</span>
+            <span class="entry-name${person.name ? '' : ' entry-name-unassigned'}">${escHtml(person.name || 'Unassigned')}</span>
           </span>
           ${badgeHTML(person.status)}
           ${canReorder ? `
@@ -215,6 +221,94 @@ export function renderRoster(roster, filter, dateStr) {
       </article>
     </div>`)
     .join('');
+}
+
+// ── Roster templates ─────────────────────────────────────
+
+function templateRoleRow(role = {}) {
+  return `<div class="template-role-row">
+    <label class="field">
+      <span>Program part</span>
+      <input type="text" data-role-field="role" maxlength="80" value="${escHtml(role.role || '')}" placeholder="e.g. Opening Prayer" required />
+    </label>
+    <label class="field">
+      <span>Time <span class="optional-badge">optional</span></span>
+      <input type="text" data-role-field="time" maxlength="40" value="${escHtml(role.time || '')}" placeholder="e.g. 9:00 AM" />
+    </label>
+    <label class="field template-note-field">
+      <span>Note <span class="optional-badge">optional</span></span>
+      <input type="text" data-role-field="note" maxlength="160" value="${escHtml(role.note || '')}" placeholder="Optional instructions" />
+    </label>
+    <button class="btn btn-sm btn-danger template-remove-role" type="button" aria-label="Remove program part">Remove</button>
+  </div>`;
+}
+
+export function renderTemplates(templates) {
+  const list = document.getElementById('templateList');
+  if (!templates.length) {
+    const isGuest = document.body.classList.contains('guest-mode');
+    list.innerHTML = isGuest
+      ? '<p class="template-empty">No templates have been saved on this device yet.</p>'
+      : '<p class="template-empty">No templates yet. Create one to reuse your Sabbath program parts and times.</p>';
+    return;
+  }
+
+  list.innerHTML = templates.map((template) => {
+    const color = /^#[0-9a-f]{6}$/i.test(template.color) ? template.color : '#3c6e47';
+    const roles = Array.isArray(template.roles) ? template.roles : [];
+    const preview = roles.slice(0, 3).map((role) => escHtml(role.role)).join(' · ');
+    const remaining = roles.length > 3 ? ` +${roles.length - 3} more` : '';
+    const roleSummary = roles.length
+      ? `${preview}${remaining}`
+      : 'No program parts';
+
+    return `<article class="template-card" style="--template-color:${color}">
+      <span class="template-swatch" aria-label="Template color"></span>
+      <div class="template-card-copy">
+        <h3>${escHtml(template.name)}</h3>
+        <p class="template-card-summary">${roleSummary}</p>
+        <span class="template-card-count">${roles.length} ${roles.length === 1 ? 'program part' : 'program parts'}</span>
+      </div>
+      <div class="template-card-actions">
+        <button class="btn btn-sm btn-primary template-admin" type="button" data-template-action="apply" data-template-id="${escHtml(template.id)}">Use template</button>
+        <div class="template-admin template-secondary-actions">
+          <button class="btn btn-sm" type="button" data-template-action="edit" data-template-id="${escHtml(template.id)}">Edit</button>
+          <button class="btn btn-sm" type="button" data-template-action="duplicate" data-template-id="${escHtml(template.id)}">Duplicate</button>
+          <button class="btn btn-sm btn-danger" type="button" data-template-action="delete" data-template-id="${escHtml(template.id)}">Delete</button>
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+export function openTemplateModal(template = null) {
+  document.getElementById('templateModalTitle').textContent = template?.id ? 'Edit roster template' : 'New roster template';
+  document.getElementById('templateName').value = template?.name || '';
+  document.getElementById('templateColor').value = template?.color || '#3c6e47';
+  const roles = template?.roles?.length ? template.roles : [{}];
+  document.getElementById('templateRoleList').innerHTML = roles.map(templateRoleRow).join('');
+  document.getElementById('templateModal').style.display = 'flex';
+  document.getElementById('templateName').focus();
+}
+
+export function closeTemplateModal() {
+  document.getElementById('templateModal').style.display = 'none';
+}
+
+export function addTemplateRoleRow(role = {}) {
+  document.getElementById('templateRoleList').insertAdjacentHTML('beforeend', templateRoleRow(role));
+}
+
+export function getTemplateValues() {
+  return {
+    name: document.getElementById('templateName').value.trim(),
+    color: document.getElementById('templateColor').value,
+    roles: [...document.querySelectorAll('#templateRoleList .template-role-row')].map((row) => ({
+      role: row.querySelector('[data-role-field="role"]').value.trim(),
+      time: row.querySelector('[data-role-field="time"]').value.trim(),
+      note: row.querySelector('[data-role-field="note"]').value.trim(),
+    })),
+  };
 }
 
 // ── Modal ─────────────────────────────────────────────────

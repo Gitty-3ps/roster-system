@@ -120,6 +120,81 @@
   justify-self: end;
 }
 
+/* ── Roster template library ── */
+.template-section {
+  padding: 1.15rem 1.25rem;
+}
+
+.template-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.template-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  gap: var(--space-sm);
+}
+
+.template-card {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 5px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.template-card-copy {
+  min-width: 0;
+}
+
+.template-card-actions,
+.template-secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.template-secondary-actions {
+  justify-content: flex-end;
+}
+
+.template-roles-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin: 1.25rem 0 var(--space-sm);
+}
+
+.template-role-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: 1.25rem;
+}
+
+.template-role-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.2fr) minmax(110px, 0.8fr) minmax(150px, 1fr) auto;
+  align-items: end;
+  gap: var(--space-sm);
+}
+
+.template-color-field {
+  align-items: flex-start;
+}
+
+.template-modal {
+  max-width: 760px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
 /* ── Roster header ── */
 .roster-header {
   display: flex;
@@ -331,6 +406,14 @@
   .add-row > .btn {
     grid-column: 1 / -1;
   }
+
+  .template-role-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .template-remove-role {
+    justify-self: start;
+  }
 }
 
 /* ── Mobile (≤ 560px) ── */
@@ -393,6 +476,40 @@
   .add-row > .btn {
     grid-column: 1;
     justify-self: stretch;
+  }
+
+  .template-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .template-card {
+    grid-template-columns: 5px minmax(0, 1fr);
+  }
+
+  .template-list {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(270px, 82%);
+    grid-template-columns: unset;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    padding-bottom: var(--space-xs);
+  }
+
+  .template-card {
+    grid-template-rows: 1fr auto;
+    scroll-snap-align: start;
+  }
+
+  .template-card-actions {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+
+  .template-role-row {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   /* Roster actions wrap cleanly */

@@ -7,6 +7,8 @@
  *   saveRoster(dateStr, roster)        → Promise<void>
  *   loadServiceState()                 → ServiceState | null
  *   saveServiceState(state)            → void
+ *   loadRosterTemplates()              → RosterTemplate[]
+ *   saveRosterTemplates(templates)     → void
  *
  * Firestore's enableIndexedDbPersistence() makes ALL reads/writes
  * available offline automatically — no extra code needed per-call.
@@ -99,4 +101,36 @@ export function loadServiceState() {
 
 export function saveServiceState(state) {
   localStorage.setItem(SERVICE_KEY, JSON.stringify(state));
+}
+// ── Roster templates (localStorage — reusable on this device) ──
+
+const TEMPLATES_KEY = 'graceboard_roster_templates';
+
+export function loadRosterTemplates() {
+  try {
+    const templates = JSON.parse(localStorage.getItem(TEMPLATES_KEY) ?? '[]');
+    if (!Array.isArray(templates)) return [];
+    return templates.filter((template) =>
+      template &&
+      typeof template.id === 'string' &&
+      typeof template.name === 'string' &&
+      typeof template.color === 'string' &&
+      Array.isArray(template.roles) &&
+      template.roles.length > 0 &&
+      template.roles.every((role) =>
+        role &&
+        typeof role.role === 'string' &&
+        role.role.trim() !== '' &&
+        typeof role.time === 'string' &&
+        typeof role.note === 'string',
+      ),
+    );
+  } catch (error) {
+    console.warn('Could not load roster templates from local storage.', error);
+    return [];
+  }
+}
+
+export function saveRosterTemplates(templates) {
+  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
 }

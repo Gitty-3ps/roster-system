@@ -336,6 +336,128 @@
   font-size: 13px;
 }
 
+/* ── Roster template library ─────────────────────────────── */
+.template-title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  font-weight: 650;
+}
+
+.template-description,
+.template-storage-note,
+.template-roles-heading p {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.template-storage-note {
+  margin-top: var(--space-sm);
+  color: var(--color-text-faint);
+  font-size: var(--font-size-xs);
+}
+
+.template-empty {
+  margin: 0;
+  padding: 1rem;
+  border: 1px dashed var(--color-border-field);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.template-card {
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--template-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgba(26, 26, 24, 0.05);
+}
+
+.template-swatch {
+  width: 5px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--template-color);
+}
+
+.template-card-copy h3,
+.template-roles-heading h4 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  font-weight: 650;
+}
+
+.template-card-summary {
+  overflow: hidden;
+  margin: 3px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-card-count {
+  display: inline-block;
+  margin-top: 5px;
+  color: var(--color-text-faint);
+  font-size: var(--font-size-xs);
+}
+
+.template-card-actions {
+  justify-content: flex-end;
+}
+
+.template-roles-heading h4 {
+  font-size: var(--font-size-base);
+}
+
+.template-roles-heading p {
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+}
+
+.template-color-field input[type="color"] {
+  width: 54px;
+  height: 36px;
+  padding: 3px;
+  cursor: pointer;
+}
+
+.template-role-row {
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.template-role-row .field span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.template-role-row .field input {
+  width: 100%;
+}
+
+.template-remove-role {
+  margin-bottom: 1px;
+}
+
+.template-admin {
+  flex-shrink: 0;
+}
+
+.entry-name-unassigned {
+  color: var(--color-text-muted);
+  font-weight: 400;
+  font-style: italic;
+}
 
 /* ── Roster card ─────────────────────────────────────────── */
 .roster-card {
@@ -784,6 +906,7 @@ tbody td {
    Defense-in-depth: app.js also blocks these actions in JS,
    this just keeps the UI honest about what's clickable. */
 body.guest-mode .add-section,
+body.guest-mode .template-admin,
 body.guest-mode .editable-badge,
 body.guest-mode #actionsTh,
 body.guest-mode .td-actions {

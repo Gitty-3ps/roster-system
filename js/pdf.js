@@ -70,7 +70,7 @@ export function downloadPDF({ serviceName, serviceDate, roster, onError, onSucce
     body:   roster.map((p, i) => [
       i + 1,
       p.role,
-      p.name,
+      p.name || 'Unassigned',
       p.time || '—',
       p.note || '—',
       p.status.charAt(0).toUpperCase() + p.status.slice(1),

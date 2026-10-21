@@ -92,6 +92,19 @@
     </div>
   </div>
 
+  <!-- ── Roster templates ── -->
+  <section class="card template-section" aria-labelledby="templateSectionTitle">
+    <div class="template-header">
+      <div>
+        <h2 class="template-title" id="templateSectionTitle">Roster templates</h2>
+        <p class="template-description">Start a Sabbath roster with saved program parts and optional times.</p>
+      </div>
+      <button class="btn btn-primary template-admin" id="newTemplateBtn" type="button" onclick="app.newTemplate()">＋ New template</button>
+    </div>
+    <div class="template-list" id="templateList" aria-live="polite"></div>
+    <p class="template-storage-note">Templates are saved on this device.</p>
+  </section>
+
   <!-- ── Service bar ── -->
   <div class="card service-bar">
     <div class="service-bar-hint">
@@ -254,6 +267,35 @@
       <button class="btn btn-primary" onclick="app.saveEdit()">Save changes</button>
     </div>
   </div>
+</div>
+
+<!-- ── Create / edit roster template ── -->
+<div id="templateModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="templateModalTitle">
+  <form class="modal template-modal" id="templateForm">
+    <h3 id="templateModalTitle">New roster template</h3>
+    <div class="modal-fields">
+      <div class="field">
+        <label for="templateName">Template name</label>
+        <input id="templateName" type="text" maxlength="60" placeholder="e.g. Regular Sabbath" required />
+      </div>
+      <div class="field template-color-field">
+        <label for="templateColor">Template color</label>
+        <input id="templateColor" type="color" value="#3c6e47" />
+      </div>
+    </div>
+    <div class="template-roles-heading">
+      <div>
+        <h4>Program parts</h4>
+        <p>Names are left blank so you can assign people for each Sabbath.</p>
+      </div>
+      <button class="btn btn-sm" id="addTemplateRoleBtn" type="button">＋ Add part</button>
+    </div>
+    <div class="template-role-list" id="templateRoleList"></div>
+    <div class="modal-actions">
+      <button class="btn" id="cancelTemplateBtn" type="button">Cancel</button>
+      <button class="btn btn-primary" type="submit">Save template</button>
+    </div>
+  </form>
 </div>
 
 <!-- ── Toast ── -->

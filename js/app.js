@@ -22,6 +22,8 @@ import {
   saveRoster,
   loadServiceState,
   saveServiceState,
+  loadRosterTemplates,
+  saveRosterTemplates,
 } from './storage.js';
 
 import {
@@ -46,6 +48,11 @@ import {
   showGateError,
   getPasscodeInput,
   applyRole,
+  renderTemplates,
+  openTemplateModal,
+  closeTemplateModal,
+  addTemplateRoleRow,
+  getTemplateValues,
 } from './ui.js';
 
 import { downloadPDF } from './pdf.js';
@@ -104,6 +111,7 @@ function logout() {
 function _enterApp() {
   hideGate();
   applyRole(role);
+  renderTemplates(_templates);
   boot();
 }
 
@@ -114,7 +122,9 @@ let state = loadServiceState() ?? {
   date: toDateStr(getNextSaturday(new Date())),
 };
 
+let _templates = loadRosterTemplates();
 let editingId      = null;
+let editingTemplateId = null;
 let _currentRoster = [];      // in-memory cache of the live roster
 let _unsubscribe   = null;    // current Firestore listener teardown fn
 let _booted        = false;   // guards against double-booting
@@ -195,6 +205,125 @@ function onDateChange() {
   updateWeekLabel(state.date);
   updateSunsetNotice(`sunset (~${sunsetLabel(state.date)})`);
   _subscribe();
+}
+
+// ── Roster templates (admin only) ─────────────────────────
+
+function _persistTemplates(templates) {
+  try {
+    saveRosterTemplates(templates);
+    _templates = templates;
+    renderTemplates(templates);
+    return true;
+  } catch (error) {
+    console.error('Could not save roster templates.', error);
+    showToast('Template could not be saved on this device.');
+    return false;
+  }
+}
+
+function newTemplate() {
+  if (!_requireAdmin()) return;
+  editingTemplateId = null;
+  openTemplateModal({
+    roles: _currentRoster.map(({ role, time, note }) => ({ role, time: time || '', note: note || '' })),
+  });
+}
+
+function editTemplate(id) {
+  if (!_requireAdmin()) return;
+  const template = _templates.find((item) => item.id === id);
+  if (!template) return;
+  editingTemplateId = id;
+  openTemplateModal(template);
+}
+
+function duplicateTemplate(id) {
+  if (!_requireAdmin()) return;
+  const template = _templates.find((item) => item.id === id);
+  if (!template) return;
+
+  const baseName = `${template.name} (copy)`;
+  const existingNames = new Set(_templates.map((item) => item.name.toLowerCase()));
+  let name = baseName;
+  let copyNumber = 2;
+  while (existingNames.has(name.toLowerCase())) {
+    name = `${template.name} (copy ${copyNumber})`;
+    copyNumber += 1;
+  }
+
+  const duplicate = {
+    ...template,
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    roles: template.roles.map((item) => ({ ...item })),
+  };
+  if (_persistTemplates([..._templates, duplicate])) {
+    showToast(`Created "${name}".`);
+  }
+}
+
+function saveTemplate(event) {
+  event.preventDefault();
+  if (!_requireAdmin()) return;
+
+  const { name, color, roles } = getTemplateValues();
+  if (!name) { showToast('Enter a name for this template.'); return; }
+  if (!roles.length || roles.some((item) => !item.role)) {
+    showToast('Add a program part or complete each program part name.');
+    return;
+  }
+
+  const template = {
+    id: editingTemplateId || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    color,
+    roles,
+  };
+  const wasEditing = Boolean(editingTemplateId);
+  const templates = editingTemplateId
+    ? _templates.map((item) => item.id === editingTemplateId ? template : item)
+    : [..._templates, template];
+
+  if (!_persistTemplates(templates)) return;
+  closeTemplateModal();
+  editingTemplateId = null;
+  showToast(wasEditing ? 'Template updated.' : 'Template saved.');
+}
+
+function deleteTemplate(id) {
+  if (!_requireAdmin()) return;
+  const template = _templates.find((item) => item.id === id);
+  if (!template || !confirm(`Delete the "${template.name}" template?`)) return;
+  const templates = _templates.filter((item) => item.id !== id);
+  if (_persistTemplates(templates)) showToast('Template deleted.');
+}
+
+async function applyTemplate(id) {
+  if (!_requireAdmin()) return;
+  const template = _templates.find((item) => item.id === id);
+  if (!template) return;
+
+  if (_currentRoster.length && !confirm(`Use "${template.name}" for ${formatDateShort(state.date)}? This will replace the current roster.`)) return;
+
+  const roster = template.roles.map((item, index) => ({
+    id: index + 1,
+    name: '',
+    role: item.role,
+    time: item.time || '',
+    note: item.note || '',
+    status: 'pending',
+  }));
+
+  try {
+    await saveRoster(state.date, roster);
+    _currentRoster = roster;
+    renderRoster(roster, getFilterValue(), state.date);
+    showToast(`"${template.name}" loaded for ${formatDateShort(state.date)}. Assign people to each part.`);
+  } catch (error) {
+    console.error('Could not apply roster template.', error);
+    showToast('Template could not be applied. Please try again.');
+  }
 }
 
 // ── Roster CRUD (admin only) ──────────────────────────────
@@ -289,6 +418,29 @@ document.getElementById('serviceName').addEventListener('change', function () {
 
 document.getElementById('editModal').addEventListener('click', function (e) {
   if (e.target === this) closeModal();
+});
+
+const templateModal = document.getElementById('templateModal');
+const templateRoleList = document.getElementById('templateRoleList');
+
+document.getElementById('templateForm').addEventListener('submit', saveTemplate);
+document.getElementById('cancelTemplateBtn').addEventListener('click', closeTemplateModal);
+document.getElementById('addTemplateRoleBtn').addEventListener('click', () => addTemplateRoleRow());
+templateModal.addEventListener('click', (event) => {
+  if (event.target === templateModal) closeTemplateModal();
+});
+templateRoleList.addEventListener('click', (event) => {
+  const removeButton = event.target.closest('.template-remove-role');
+  if (removeButton) removeButton.closest('.template-role-row').remove();
+});
+document.getElementById('templateList').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-template-action]');
+  if (!button) return;
+  const { templateAction, templateId } = button.dataset;
+  if (templateAction === 'apply') applyTemplate(templateId);
+  if (templateAction === 'edit') editTemplate(templateId);
+  if (templateAction === 'duplicate') duplicateTemplate(templateId);
+  if (templateAction === 'delete') deleteTemplate(templateId);
 });
 
 const rosterList = document.getElementById('rosterList');
@@ -469,7 +621,14 @@ rosterList.addEventListener('pointerup', (event) => finishSwipe(event));
 rosterList.addEventListener('pointercancel', (event) => finishSwipe(event, true));
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') {
+    closeModal();
+    closeTemplateModal();
+  }
+  if (e.key === 'Enter' && templateModal.style.display === 'flex' && e.target.tagName !== 'BUTTON') {
+    e.preventDefault();
+    document.getElementById('templateForm').requestSubmit();
+  }
   if (e.key === 'Enter' && document.getElementById('editModal').style.display === 'flex') {
     saveEdit();
   }
@@ -493,6 +652,7 @@ window.app = {
   closeModal,
   downloadPDF:   handleDownloadPDF,
   refreshRoster: _refreshRoster,
+  newTemplate,
 };
 
 // ── Service Worker registration (offline shell caching) ───
@@ -526,8 +686,10 @@ setInterval(updateClock, 1_000);
 if (role === 'admin' || role === 'guest') {
   hideGate();
   applyRole(role);
+  renderTemplates(_templates);
   boot();
 } else {
   showChoiceScreen();
   showGate();
+  renderTemplates(_templates);
 }
