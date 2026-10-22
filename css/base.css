@@ -16,6 +16,8 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ── Accessible focus outline for keyboard users ── */
@@ -52,4 +54,9 @@ select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   background: var(--color-bg);
+}
+
+::selection {
+  background: #c9dfd0;
+  color: var(--color-text);
 }

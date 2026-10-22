@@ -534,3 +534,185 @@
     width: auto;
   }
 }
+
+/* ── Refreshed responsive dashboard layout ── */
+.app {
+  width: min(100% - 40px, 1160px);
+  padding: 32px 0 64px;
+}
+
+.header {
+  align-items: center;
+  min-height: 148px;
+  margin-bottom: 24px;
+  padding: 28px 32px;
+  border-radius: 24px;
+}
+
+.header-left,
+.header-right {
+  position: relative;
+  z-index: 1;
+}
+
+.header-right {
+  gap: 5px;
+}
+
+.template-section,
+.service-bar,
+.add-section {
+  margin-bottom: 18px;
+}
+
+.template-section {
+  padding: 22px 24px;
+}
+
+.template-header {
+  margin-bottom: 18px;
+}
+
+.template-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 12px;
+}
+
+.template-card {
+  grid-template-columns: 5px minmax(0, 1fr);
+  grid-template-rows: minmax(78px, auto) auto;
+  gap: 8px 14px;
+}
+
+.template-card-actions {
+  grid-column: 2;
+  justify-content: space-between;
+}
+
+.service-fields {
+  gap: 16px;
+}
+
+.service-bar {
+  padding: 22px 24px;
+}
+
+.add-section {
+  padding: 22px 24px;
+}
+
+.add-row {
+  gap: 14px;
+}
+
+.roster-header {
+  padding: 20px 24px;
+}
+
+.roster-board {
+  gap: 14px;
+  padding: 20px 24px 24px 52px;
+}
+
+@media (max-width: 800px) {
+  .app {
+    width: min(100% - 32px, 680px);
+    padding-top: 22px;
+  }
+
+  .header {
+    min-height: 128px;
+    padding: 24px;
+  }
+
+  .service-bar,
+  .add-section {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .app {
+    width: calc(100% - 24px);
+    padding: 12px 0 36px;
+  }
+
+  .header {
+    min-height: 0;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .header-right {
+    align-items: flex-start;
+    width: 100%;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .template-section {
+    margin-bottom: 14px;
+    padding: 18px;
+  }
+
+  .template-header {
+    gap: 12px;
+  }
+
+  .template-header > div {
+    width: 100%;
+  }
+
+  .template-header .btn {
+    width: 100%;
+  }
+
+  .template-list {
+    grid-auto-columns: 88%;
+    gap: 10px;
+    padding-bottom: 4px;
+  }
+
+  .template-card {
+    grid-template-rows: auto auto;
+    gap: 12px 10px;
+    padding: 14px;
+  }
+
+  .template-card-actions {
+    gap: 10px;
+  }
+
+  .template-secondary-actions {
+    flex-wrap: wrap;
+  }
+
+  .template-card-actions > .btn {
+    min-width: 112px;
+  }
+
+  .template-storage-note {
+    margin-top: 10px;
+  }
+
+  .service-bar,
+  .add-section {
+    margin-bottom: 14px;
+    padding: 18px;
+  }
+
+  .roster-board {
+    gap: 12px;
+    padding: 14px 12px 16px 34px;
+  }
+
+  .roster-board::before {
+    left: 18px;
+  }
+
+  .roster-entry-wrap::before {
+    left: -23px;
+  }
+}
