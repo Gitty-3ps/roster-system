@@ -6,7 +6,7 @@
  * else (Firestore uses its own IndexedDB offline layer — not this SW).
  */
 
-const CACHE_NAME = 'graceboard-v5';
+const CACHE_NAME = 'graceboard-v6';
 
 // Everything needed to run the app and generate PDFs offline
 const PRECACHE = [

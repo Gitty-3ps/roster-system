@@ -84,7 +84,7 @@ on this device; they do not sync to other devices.
 | **No globals** | ES modules keep everything scoped. Only `window.app` is intentionally global, as a bridge for inline HTML handlers. |
 | **Pure functions** | `utils.js` has zero side-effects — every function takes data in, returns data out. Trivial to unit-test. |
 | **Defense in depth** | Guest restrictions are enforced both in the UI (CSS hides edit controls) and in `app.js` (`_requireAdmin()` blocks the underlying functions even if called directly). |
-| **Clarity and deference** | The service roster and template actions have a clear hierarchy, while color and decoration support rather than compete with roster content. |
+| **Clarity and deference** | A warm paper, pine, and clay palette plus restrained serif headings give the roster a distinct identity while keeping actions and status easy to scan. |
 | **Accessible interaction** | Controls provide visible focus and feedback, layouts adapt to mobile, and reduced-motion preferences are respected. |
 
 ---

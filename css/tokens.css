@@ -5,45 +5,48 @@
 
 :root {
   /* ── Brand palette ── */
-  --color-brand:          #245b42;
-  --color-brand-dark:     #184330;
-  --color-brand-bg:       #e5f1e9;
-  --color-brand-bg-light: #f2f7f3;
+  --color-brand:          #315747;
+  --color-brand-dark:     #234236;
+  --color-brand-bg:       #e7ede5;
+  --color-brand-bg-light: #f3f5ef;
+  --color-accent:         #a85f3b;
+  --color-accent-dark:    #80452d;
+  --color-accent-bg:      #f3e9df;
 
   /* ── Neutrals ── */
-  --color-bg:             #f1f4f0;
-  --color-card:           #ffffff;
-  --color-surface:        #ffffff;
-  --color-surface-muted:  #f7f9f7;
-  --color-border:         #e1e8e2;
-  --color-border-field:   #cbd6ce;
+  --color-bg:             #f3f0e8;
+  --color-card:           #fffdf8;
+  --color-surface:        #fffdf8;
+  --color-surface-muted:  #f7f4ed;
+  --color-border:         #e2dbcf;
+  --color-border-field:   #bfb7a9;
 
   /* ── Text ── */
-  --color-text:           #17251d;
-  --color-text-muted:     #59685e;
-  --color-text-faint:     #78847c;
+  --color-text:           #292e29;
+  --color-text-muted:     #555d55;
+  --color-text-faint:     #6b726a;
 
   /* ── Status: Confirmed ── */
-  --color-confirmed-bg:   #e8f3e8;
-  --color-confirmed-text: #285d35;
+  --color-confirmed-bg:   #e6efe5;
+  --color-confirmed-text: #285438;
 
   /* ── Status: Pending ── */
-  --color-pending-bg:     #fff2d9;
-  --color-pending-text:   #80500c;
+  --color-pending-bg:     #f5ead5;
+  --color-pending-text:   #704d13;
 
   /* ── Status: Declined ── */
-  --color-declined-bg:    #fdebea;
-  --color-declined-text:  #9a3430;
+  --color-declined-bg:    #f4e5df;
+  --color-declined-text:  #843f32;
 
   /* ── Danger ── */
-  --color-danger-bg:      #fdebea;
-  --color-danger-text:    #9a3430;
-  --color-danger-border:  #efcfcd;
-  --color-danger-bg-hover:#f8d7d4;
+  --color-danger-bg:      #f4e5df;
+  --color-danger-text:    #843f32;
+  --color-danger-border:  #ddc2b8;
+  --color-danger-bg-hover:#ecdbd3;
 
   /* ── Overlay ── */
-  --color-overlay:        rgba(13, 28, 20, 0.48);
-  --color-toast-bg:       #173c2c;
+  --color-overlay:        rgba(31, 35, 31, 0.48);
+  --color-toast-bg:       #292e29;
 
   /* ── Spacing ── */
   --space-xs:  4px;
@@ -53,13 +56,14 @@
   --space-xl:  24px;
 
   /* ── Radius ── */
-  --radius-sm:  8px;
-  --radius-md:  12px;
-  --radius-lg:  18px;
+  --radius-sm:  5px;
+  --radius-md:  9px;
+  --radius-lg:  14px;
   --radius-full: 9999px;
 
   /* ── Typography ── */
-  --font-family:    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-family:    "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-display: Georgia, "Times New Roman", serif;
   --font-size-xs:   11px;
   --font-size-sm:   12px;
   --font-size-base: 15px;
@@ -73,7 +77,7 @@
   --transition-toast:  0.25s ease;
 
   /* ── Shadows / focus ring ── */
-  --focus-ring: 0 0 0 3px rgba(36, 91, 66, 0.18);
+  --focus-ring: 0 0 0 3px rgba(49, 87, 71, 0.2);
 
   /* ── Z-index layers ── */
   --z-modal:  100;
