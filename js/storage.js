@@ -31,22 +31,6 @@ import {
 
 // ─────────────────────────────────────────────────────────
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCh6FAqEkP5xv8XIo-JzYYncwrV7bOnHrA",
-
-  authDomain: "graceboard-a3e90.firebaseapp.com",
-
-  projectId: "graceboard-a3e90",
-
-  storageBucket: "graceboard-a3e90.firebasestorage.app",
-
-  messagingSenderId: "400298351043",
-
-  appId: "1:400298351043:web:bdf241a0bd114652544576",
-
-  //measurementId: "G-HH7WGSKL82"
-};
-
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = initializeFirestore(firebaseApp, {
